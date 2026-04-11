@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>任务列表</title>
+  <link rel="stylesheet" href="../assets/page.css" />
+</head>
+<body>
+  <div class="page">
+    <section class="page-header">
+      <div>
+        <h1>任务列表</h1>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="filters task-filters">
+        <div class="field task-field-keyword">
+          <label>关键字</label>
+          <input id="keywordFilter" type="text" placeholder="请输入任务号 / 容器编码 / 库位" />
+        </div>
+        <div class="field task-field-command">
+          <label>命令类型</label>
+          <select id="commandFilter">
+            <option value="">全部</option>
+            <option value="入库">入库</option>
+            <option value="出库">出库</option>
+          </select>
+        </div>
+        <div class="field task-field-type">
+          <label>任务类型</label>
+          <select id="taskTypeFilter">
+            <option value="">全部</option>
+            <option value="普通入库">普通入库</option>
+            <option value="普通出库">普通出库</option>
+            <option value="人工组盘">人工组盘</option>
+            <option value="空托入库">空托入库</option>
+            <option value="空托出库">空托出库</option>
+          </select>
+        </div>
+        <div class="field task-field-status">
+          <label>任务状态</label>
+          <select id="taskStatusFilter">
+            <option value="">全部</option>
+            <option value="待执行">待执行</option>
+            <option value="已完成">已完成</option>
+            <option value="已取消">已取消</option>
+          </select>
+        </div>
+        <div class="field date-range-field task-field-date">
+          <label>创建时间</label>
+          <div class="date-range-input">
+            <input id="taskStartDate" type="date" value="2024-09-01" />
+            <span class="date-range-sep">至</span>
+            <input id="taskEndDate" type="date" value="2026-01-31" />
+          </div>
+        </div>
+        <div class="inline-actions task-filter-actions">
+          <button id="taskSearchBtn" class="btn" type="button">查询</button>
+          <button id="taskResetBtn" class="btn-outline" type="button">重置</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="table-shell" style="margin-top: 16px;">
+      <div class="table-headbar">
+        <button class="btn" type="button">列表导出</button>
+      </div>
+      <div class="table-wrap task-table-wrap">
+        <table class="task-wide-table task-sticky-action-table">
+          <thead>
+            <tr>
+              <th>序号</th>
+              <th>任务号</th>
+              <th>命令类型</th>
+              <th>任务类型</th>
+              <th>容器编码</th>
+              <th>取货库台</th>
+              <th>放货库台</th>
+              <th>取货库位</th>
+              <th>放货库位</th>
+              <th>开始时间</th>
+              <th>结束时间</th>
+              <th>任务状态</th>
+              <th>异常状态</th>
+              <th>错误码</th>
+              <th>模式</th>
+              <th>异常原因</th>
+              <th>创建时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="taskTableBody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="taskResultCount">共 0 条</span>
+        <span class="page-size">10条/页</span>
+        <div class="pagination">
+          <span class="pager-btn">&lt;</span>
+          <span class="page-num active">1</span>
+          <span class="page-num">2</span>
+          <span class="page-num">3</span>
+          <span class="page-num">4</span>
+          <span class="page-num">5</span>
+          <span class="pager-btn">...</span>
+          <span class="page-num">8</span>
+          <span class="pager-btn">&gt;</span>
+        </div>
+        <span>前往</span>
+        <span class="page-input">1</span>
+        <span>页</span>
+      </div>
+    </section>
+  </div>
+
+  <div id="taskConfirmOverlay" class="task-confirm-overlay" hidden>
+    <article class="task-confirm-card" role="dialog" aria-modal="true" aria-labelledby="taskConfirmTitle">
+      <div class="task-confirm-head">
+        <h3 id="taskConfirmTitle">提示</h3>
+        <button id="taskConfirmClose" class="task-confirm-close" type="button" aria-label="关闭弹窗">x</button>
+      </div>
+      <div class="task-confirm-body">
+        <div class="task-confirm-icon">!</div>
+        <p id="taskConfirmMessage"></p>
+      </div>
+      <div class="task-confirm-actions">
+        <button id="taskConfirmCancel" class="btn-outline" type="button">取消</button>
+        <button id="taskConfirmSubmit" class="btn" type="button">确定</button>
+      </div>
+    </article>
+  </div>
+
+  <script src="../assets/i18n.js"></script>
+  <script>
+    const taskData = [
+      { no: 1, taskNo: '75', commandType: '入库', taskType: '普通入库', containerCode: 'TP77', pickStation: 'T1', dropStation: '-', pickLocation: '-', dropLocation: '1-1-2-2', startTime: '2026-01-24 14:10:11', endTime: '2026-01-24 14:19:46', taskStatus: '已完成', exceptionStatus: '异常', errorCode: 'WCS-409', mode: '远程', reason: '强制完成', createdAt: '2026-01-24 14:19:46', actions: [] },
+      { no: 2, taskNo: '73', commandType: '入库', taskType: '普通入库', containerCode: 'TP22', pickStation: 'T1', dropStation: '-', pickLocation: '-', dropLocation: '1-1-1-1', startTime: '2024-10-15 14:42:25', endTime: '-', taskStatus: '待执行', exceptionStatus: '正常', errorCode: '', mode: '本地', reason: '-', createdAt: '2024-10-15 14:42:25', actions: ['强制完成', '取消'] },
+      { no: 3, taskNo: '72', commandType: '入库', taskType: '人工组盘', containerCode: 'TP68', pickStation: 'T1', dropStation: '-', pickLocation: '-', dropLocation: '1-1-1-3', startTime: '2024-10-12 13:29:38', endTime: '-', taskStatus: '待执行', exceptionStatus: '正常', errorCode: '', mode: '本地', reason: '-', createdAt: '2024-10-12 13:29:38', actions: ['强制完成', '取消'] },
+      { no: 4, taskNo: '68', commandType: '入库', taskType: '空托入库', containerCode: 'TP53', pickStation: 'T1', dropStation: '-', pickLocation: '-', dropLocation: '1-1-1-5', startTime: '2024-09-20 10:17:18', endTime: '-', taskStatus: '待执行', exceptionStatus: '正常', errorCode: '', mode: '远程', reason: '-', createdAt: '2024-09-20 10:17:18', actions: ['强制完成', '取消'] },
+      { no: 5, taskNo: '67', commandType: '出库', taskType: '空托出库', containerCode: 'TP003', pickStation: '-', dropStation: 'T1', pickLocation: '1-6-3-1', dropLocation: '-', startTime: '2024-09-14 17:29:13', endTime: '-', taskStatus: '待执行', exceptionStatus: '异常', errorCode: 'PLC-017', mode: '远程', reason: '-', createdAt: '2024-09-14 17:29:13', actions: ['强制完成', '取消'] },
+      { no: 6, taskNo: '66', commandType: '出库', taskType: '普通出库', containerCode: 'TP51', pickStation: '-', dropStation: 'T1', pickLocation: '1-1-1-1', dropLocation: '-', startTime: '2024-09-14 17:25:00', endTime: '-', taskStatus: '待执行', exceptionStatus: '正常', errorCode: '', mode: '本地', reason: '-', createdAt: '2024-09-14 17:25:00', actions: ['强制完成', '取消'] },
+      { no: 7, taskNo: '65', commandType: '入库', taskType: '普通入库', containerCode: 'TP70', pickStation: 'T5', dropStation: '-', pickLocation: '-', dropLocation: '8-1-1-9', startTime: '2024-09-14 17:06:58', endTime: '-', taskStatus: '待执行', exceptionStatus: '正常', errorCode: '', mode: '远程', reason: '-', createdAt: '2024-09-14 17:06:58', actions: ['强制完成', '取消'] },
+      { no: 8, taskNo: '64', commandType: '入库', taskType: '普通入库', containerCode: 'TP59', pickStation: 'T5', dropStation: '-', pickLocation: '-', dropLocation: '8-1-1-8', startTime: '2024-09-14 16:51:16', endTime: '-', taskStatus: '待执行', exceptionStatus: '正常', errorCode: '', mode: '远程', reason: '-', createdAt: '2024-09-14 16:51:16', actions: ['强制完成', '取消'] },
+      { no: 9, taskNo: '63', commandType: '出库', taskType: '普通出库', containerCode: 'TP61', pickStation: '-', dropStation: 'T3', pickLocation: '2-3-1-6', dropLocation: '-', startTime: '2024-09-10 09:15:32', endTime: '2024-09-10 09:30:20', taskStatus: '已取消', exceptionStatus: '异常', errorCode: 'SYS-221', mode: '本地', reason: '人工取消', createdAt: '2024-09-10 09:15:32', actions: [] },
+      { no: 10, taskNo: '62', commandType: '入库', taskType: '普通入库', containerCode: 'TP81', pickStation: 'T2', dropStation: '-', pickLocation: '-', dropLocation: '2-2-1-4', startTime: '2024-09-08 11:08:45', endTime: '2024-09-08 11:18:09', taskStatus: '已完成', exceptionStatus: '正常', errorCode: '', mode: '远程', reason: '-', createdAt: '2024-09-08 11:08:45', actions: [] }
+    ];
+
+    const keywordFilter = document.getElementById('keywordFilter');
+    const commandFilter = document.getElementById('commandFilter');
+    const taskTypeFilter = document.getElementById('taskTypeFilter');
+    const taskStatusFilter = document.getElementById('taskStatusFilter');
+    const taskStartDate = document.getElementById('taskStartDate');
+    const taskEndDate = document.getElementById('taskEndDate');
+    const taskSearchBtn = document.getElementById('taskSearchBtn');
+    const taskResetBtn = document.getElementById('taskResetBtn');
+    const taskTableBody = document.getElementById('taskTableBody');
+    const taskResultCount = document.getElementById('taskResultCount');
+    const taskConfirmOverlay = document.getElementById('taskConfirmOverlay');
+    const taskConfirmTitle = document.getElementById('taskConfirmTitle');
+    const taskConfirmMessage = document.getElementById('taskConfirmMessage');
+    const taskConfirmClose = document.getElementById('taskConfirmClose');
+    const taskConfirmCancel = document.getElementById('taskConfirmCancel');
+    const taskConfirmSubmit = document.getElementById('taskConfirmSubmit');
+    let pendingTaskAction = null;
+
+    function t(text) {
+      return window.WMSI18N ? window.WMSI18N.translateText(text) : text;
+    }
+
+    function formatNow() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mi = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    }
+
+    function closeTaskConfirm() {
+      taskConfirmOverlay.hidden = true;
+      pendingTaskAction = null;
+    }
+
+    function openTaskConfirm(message, onConfirm) {
+      pendingTaskAction = onConfirm;
+      taskConfirmTitle.textContent = t('提示');
+      taskConfirmMessage.textContent = t(message);
+      taskConfirmOverlay.hidden = false;
+    }
+
+    function getTaskStatusClass(status) {
+      if (status === '已完成') return 'success';
+      if (status === '待执行') return 'warning';
+      if (status === '已取消') return 'danger';
+      return 'info';
+    }
+
+    function getExceptionStatusClass(status) {
+      return status === '异常' ? 'danger' : 'success';
+    }
+
+    function getModeClass(mode) {
+      return mode === '远程' ? 'info' : 'warning';
+    }
+
+    function renderTaskTable(data) {
+      taskTableBody.innerHTML = '';
+
+      if (!data.length) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="18" class="table-empty">${t('未查询到符合条件的任务数据')}</td>`;
+        taskTableBody.appendChild(row);
+        taskResultCount.textContent = t('共 0 条');
+        return;
+      }
+
+      data.forEach((item) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.no}</td>
+          <td>${item.taskNo}</td>
+          <td>${item.commandType}</td>
+          <td>${item.taskType}</td>
+          <td>${item.containerCode}</td>
+          <td>${item.pickStation}</td>
+          <td>${item.dropStation}</td>
+          <td>${item.pickLocation}</td>
+          <td>${item.dropLocation}</td>
+          <td>${item.startTime}</td>
+          <td>${item.endTime}</td>
+          <td><span class="chip ${getTaskStatusClass(item.taskStatus)}">${t(item.taskStatus)}</span></td>
+          <td><span class="chip ${getExceptionStatusClass(item.exceptionStatus)}">${t(item.exceptionStatus)}</span></td>
+          <td>${item.exceptionStatus === '异常' ? item.errorCode : '-'}</td>
+          <td><span class="chip ${getModeClass(item.mode)}">${t(item.mode)}</span></td>
+          <td>${item.reason === '-' ? '-' : t(item.reason)}</td>
+          <td>${item.createdAt}</td>
+          <td>${item.actions.length ? item.actions.map((action) => `<button class="link-btn${action === '取消' ? ' danger' : ''}" type="button" data-task-action="${action}" data-task-no="${item.taskNo}">${t(action)}</button>`).join('') : '-'}</td>
+        `;
+        taskTableBody.appendChild(row);
+      });
+
+      taskResultCount.textContent = t(`共 ${data.length} 条`);
+    }
+
+    function filterTasks() {
+      const keyword = keywordFilter.value.trim().toUpperCase();
+      const commandType = commandFilter.value.trim();
+      const taskType = taskTypeFilter.value.trim();
+      const taskStatus = taskStatusFilter.value.trim();
+      const start = taskStartDate.value ? new Date(`${taskStartDate.value}T00:00:00`) : null;
+      const end = taskEndDate.value ? new Date(`${taskEndDate.value}T23:59:59`) : null;
+
+      const filtered = taskData.filter((item) => {
+        const createdAt = new Date(item.createdAt.replace(' ', 'T'));
+        const keywordSource = `${item.taskNo} ${item.containerCode} ${item.pickLocation} ${item.dropLocation}`.toUpperCase();
+
+        const matchKeyword = !keyword || keywordSource.includes(keyword);
+        const matchCommand = !commandType || item.commandType === commandType;
+        const matchTaskType = !taskType || item.taskType === taskType;
+        const matchTaskStatus = !taskStatus || item.taskStatus === taskStatus;
+        const matchStart = !start || createdAt >= start;
+        const matchEnd = !end || createdAt <= end;
+
+        return matchKeyword && matchCommand && matchTaskType && matchTaskStatus && matchStart && matchEnd;
+      });
+
+      renderTaskTable(filtered);
+    }
+
+    taskSearchBtn.addEventListener('click', filterTasks);
+    taskResetBtn.addEventListener('click', () => {
+      keywordFilter.value = '';
+      commandFilter.value = '';
+      taskTypeFilter.value = '';
+      taskStatusFilter.value = '';
+      taskStartDate.value = '2024-09-01';
+      taskEndDate.value = '2026-01-31';
+      renderTaskTable(taskData);
+    });
+
+    taskTableBody.addEventListener('click', (event) => {
+      const actionBtn = event.target.closest('[data-task-action]');
+      if (!actionBtn) return;
+
+      const action = actionBtn.dataset.taskAction;
+      const taskNo = actionBtn.dataset.taskNo;
+      const task = taskData.find((item) => item.taskNo === taskNo);
+      if (!task) return;
+
+      if (action === '强制完成') {
+        openTaskConfirm('强制完成后任务无法继续执行，是否确定强制完成？', () => {
+          task.taskStatus = '已完成';
+          task.reason = '强制完成';
+          task.endTime = formatNow();
+          task.actions = [];
+          filterTasks();
+        });
+        return;
+      }
+
+      if (action === '取消') {
+        openTaskConfirm('取消后任务无法继续执行，是否确定取消？', () => {
+          task.taskStatus = '已取消';
+          task.reason = '人工取消';
+          task.endTime = formatNow();
+          task.actions = [];
+          filterTasks();
+        });
+      }
+    });
+
+    taskConfirmClose.addEventListener('click', closeTaskConfirm);
+    taskConfirmCancel.addEventListener('click', closeTaskConfirm);
+    taskConfirmSubmit.addEventListener('click', () => {
+      if (pendingTaskAction) {
+        pendingTaskAction();
+      }
+      closeTaskConfirm();
+    });
+    taskConfirmOverlay.addEventListener('click', (event) => {
+      if (event.target === taskConfirmOverlay) {
+        closeTaskConfirm();
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !taskConfirmOverlay.hidden) {
+        closeTaskConfirm();
+      }
+    });
+
+    renderTaskTable(taskData);
+  </script>
+</body>
+</html>

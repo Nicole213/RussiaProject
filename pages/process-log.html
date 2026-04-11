@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>流程日志</title>
+  <link rel="stylesheet" href="../assets/page.css" />
+</head>
+<body>
+  <div class="page">
+    <section class="page-header">
+      <div>
+        <h1>流程日志</h1>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="filters process-log-filters">
+        <div class="field">
+          <label>业务类型</label>
+          <select id="bizTypeFilter">
+            <option value="">请选择</option>
+            <option value="WCS">WCS</option>
+            <option value="AGV">AGV</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>是否发送方</label>
+          <select id="senderFlagFilter">
+            <option value="">请选择</option>
+            <option value="是">是</option>
+            <option value="否">否</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>是否接收方</label>
+          <select id="receiverFlagFilter">
+            <option value="">请选择</option>
+            <option value="是">是</option>
+            <option value="否">否</option>
+          </select>
+        </div>
+        <div class="inline-actions process-log-actions">
+          <button id="logSearchBtn" class="btn" type="button">查询</button>
+          <button id="logResetBtn" class="btn-outline" type="button">重置</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="table-shell" style="margin-top: 16px;">
+      <div class="table-wrap task-table-wrap">
+        <table class="process-log-wide-table task-sticky-action-table">
+          <thead>
+            <tr>
+              <th>业务类型</th>
+              <th>URL</th>
+              <th>是否发送方</th>
+              <th>是否接收方</th>
+              <th>接口状态</th>
+              <th>状态码</th>
+              <th>重试次数</th>
+              <th>接口成功时间</th>
+              <th>创建时间</th>
+              <th>最后修改时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="processLogTableBody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="processLogCount">共 0 条</span>
+        <span class="page-size">10条/页</span>
+        <div class="pagination">
+          <span class="page-num active">1</span>
+          <span class="page-num">2</span>
+          <span class="page-num">3</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="logDetailOverlay" class="log-detail-overlay" hidden>
+    <article class="log-detail-modal" role="dialog" aria-modal="true" aria-labelledby="logDetailTitle">
+      <div class="log-detail-head">
+        <h3 id="logDetailTitle">请求详情</h3>
+        <button id="closeLogDetail" class="log-detail-close" type="button" aria-label="关闭弹窗">x</button>
+      </div>
+      <div class="log-detail-body">
+        <section class="log-detail-section">
+          <h4>请求URL</h4>
+          <p id="logDetailUrl"></p>
+        </section>
+        <section class="log-detail-section">
+          <h4>状态码</h4>
+          <p id="logDetailStatusCode"></p>
+        </section>
+        <section class="log-detail-section">
+          <h4>请求内容</h4>
+          <pre id="logDetailRequest"></pre>
+        </section>
+        <section class="log-detail-section">
+          <h4>响应内容</h4>
+          <pre id="logDetailResponse"></pre>
+        </section>
+      </div>
+      <div class="log-detail-actions">
+        <button id="closeLogDetailBtn" class="btn-outline" type="button">取消</button>
+      </div>
+    </article>
+  </div>
+
+  <script src="../assets/i18n.js"></script>
+  <script>
+    const processLogData = [
+      {
+        id: 'log-001',
+        bizType: 'WCS',
+        url: 'https://mock.apifox.cn/m1/3758919-0-default/InterfaceLogic/WMSInterface/OrderRequest',
+        senderFlag: '是',
+        receiverFlag: '否',
+        interfaceStatus: '是',
+        statusCode: '200',
+        retryCount: 0,
+        successTime: '2024-07-08 15:54:49',
+        createdAt: '2024-07-08 15:54:49',
+        updatedAt: '-',
+        requestBody: '{"interId":"2024070800004_FC_LIFT_L1_FcDown","taskNo":"2024070800004","taskType":"10","areaCode":"TSJ02","palletCode":"T-GFZ00001","beginAddressType":"10","beginAddressCode":"GMCB00301","endAddressType":"20","endAddressCode":"FC_LIFT_L1"}',
+        responseBody: '{"interId":"2024070800004_FC_LIFT_L1_FcDown","taskNo":"2024070800004","resultCode":"00","resultMessage":"velit"}'
+      },
+      {
+        id: 'log-002',
+        bizType: 'WCS',
+        url: 'https://mock.apifox.cn/m1/3758919-0-default/InterfaceLogic/WMSInterface/InventorySync',
+        senderFlag: '否',
+        receiverFlag: '是',
+        interfaceStatus: '是',
+        statusCode: '200',
+        retryCount: 0,
+        successTime: '2024-07-08 15:54:44',
+        createdAt: '2024-07-08 15:54:44',
+        updatedAt: '2024-07-08 15:54:44',
+        requestBody: '{"interId":"2024070800005_WCS_INV","warehouseCode":"W01","syncType":"inventory"}',
+        responseBody: '{"resultCode":"00","resultMessage":"success","count":28}'
+      },
+      {
+        id: 'log-003',
+        bizType: 'AGV',
+        url: 'https://mock.apifox.cn/m1/3758919-0-default/InterfaceLogic/AGVInterface/TaskCreate',
+        senderFlag: '是',
+        receiverFlag: '否',
+        interfaceStatus: '是',
+        statusCode: '200',
+        retryCount: 0,
+        successTime: '2024-07-08 15:54:42',
+        createdAt: '2024-07-08 15:54:42',
+        updatedAt: '-',
+        requestBody: '{"taskNo":"AGV202407080001","taskType":"move","source":"ST01","target":"A-01-01"}',
+        responseBody: '{"resultCode":"00","resultMessage":"created"}'
+      },
+      {
+        id: 'log-004',
+        bizType: 'AGV',
+        url: 'https://mock.apifox.cn/m1/3758919-0-default/InterfaceLogic/AGVInterface/TaskQuery',
+        senderFlag: '否',
+        receiverFlag: '是',
+        interfaceStatus: '是',
+        statusCode: '200',
+        retryCount: 0,
+        successTime: '2024-07-08 15:54:39',
+        createdAt: '2024-07-08 15:54:39',
+        updatedAt: '2024-07-08 15:54:39',
+        requestBody: '{"taskNo":"AGV202407080001"}',
+        responseBody: '{"taskNo":"AGV202407080001","status":"running"}'
+      },
+      {
+        id: 'log-005',
+        bizType: 'AGV',
+        url: 'https://mock.apifox.cn/m1/3758919-0-default/InterfaceLogic/AGVInterface/LocationSync',
+        senderFlag: '是',
+        receiverFlag: '否',
+        interfaceStatus: '是',
+        statusCode: '200',
+        retryCount: 1,
+        successTime: '2024-07-08 15:54:36',
+        createdAt: '2024-07-08 15:54:36',
+        updatedAt: '2024-07-08 15:54:37',
+        requestBody: '{"locationCode":"A-01-01","status":"occupied"}',
+        responseBody: '{"resultCode":"00","resultMessage":"updated"}'
+      },
+      {
+        id: 'log-006',
+        bizType: 'AGV',
+        url: 'https://mock.apifox.cn/m1/3758919-0-default/InterfaceLogic/AGVInterface/ContainerSync',
+        senderFlag: '否',
+        receiverFlag: '是',
+        interfaceStatus: '是',
+        statusCode: '200',
+        retryCount: 0,
+        successTime: '2024-07-08 15:54:33',
+        createdAt: '2024-07-08 15:54:33',
+        updatedAt: '-',
+        requestBody: '{"containerCode":"TP9981","height":"1200"}',
+        responseBody: '{"resultCode":"00","resultMessage":"synced"}'
+      },
+      {
+        id: 'log-007',
+        bizType: 'AGV',
+        url: 'https://mock.apifox.cn/m1/3758919-0-default/InterfaceLogic/AGVInterface/TaskFinish',
+        senderFlag: '是',
+        receiverFlag: '否',
+        interfaceStatus: '是',
+        statusCode: '200',
+        retryCount: 0,
+        successTime: '2024-07-08 15:54:08',
+        createdAt: '2024-07-08 15:54:08',
+        updatedAt: '-',
+        requestBody: '{"taskNo":"AGV202407080001","result":"done"}',
+        responseBody: '{"resultCode":"00","resultMessage":"finished"}'
+      },
+      {
+        id: 'log-008',
+        bizType: 'AGV',
+        url: 'https://mock.apifox.cn/m1/3758919-0-default/InterfaceLogic/AGVInterface/TaskCancel',
+        senderFlag: '否',
+        receiverFlag: '是',
+        interfaceStatus: '否',
+        statusCode: '500',
+        retryCount: 2,
+        successTime: '-',
+        createdAt: '2024-07-08 15:50:50',
+        updatedAt: '2024-07-08 15:51:12',
+        requestBody: '{"taskNo":"AGV202407080002","cancelReason":"manual"}',
+        responseBody: '{"resultCode":"99","resultMessage":"cancel failed"}'
+      }
+    ];
+
+    const bizTypeFilter = document.getElementById('bizTypeFilter');
+    const senderFlagFilter = document.getElementById('senderFlagFilter');
+    const receiverFlagFilter = document.getElementById('receiverFlagFilter');
+    const logSearchBtn = document.getElementById('logSearchBtn');
+    const logResetBtn = document.getElementById('logResetBtn');
+    const processLogTableBody = document.getElementById('processLogTableBody');
+    const processLogCount = document.getElementById('processLogCount');
+    const logDetailOverlay = document.getElementById('logDetailOverlay');
+    const closeLogDetail = document.getElementById('closeLogDetail');
+    const closeLogDetailBtn = document.getElementById('closeLogDetailBtn');
+    const logDetailUrl = document.getElementById('logDetailUrl');
+    const logDetailStatusCode = document.getElementById('logDetailStatusCode');
+    const logDetailRequest = document.getElementById('logDetailRequest');
+    const logDetailResponse = document.getElementById('logDetailResponse');
+
+    function getYesNoChipClass(value) {
+      return value === '是' ? 'success' : 'danger';
+    }
+
+    function renderProcessLogTable(data) {
+      processLogTableBody.innerHTML = '';
+
+      if (!data.length) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="11" class="table-empty">未查询到符合条件的流程日志数据</td>';
+        processLogTableBody.appendChild(row);
+        processLogCount.textContent = '共 0 条';
+        return;
+      }
+
+      data.forEach((item) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.bizType}</td>
+          <td>${item.url}</td>
+          <td><span class="chip ${getYesNoChipClass(item.senderFlag)}">${item.senderFlag}</span></td>
+          <td><span class="chip ${getYesNoChipClass(item.receiverFlag)}">${item.receiverFlag}</span></td>
+          <td><span class="chip ${getYesNoChipClass(item.interfaceStatus)}">${item.interfaceStatus}</span></td>
+          <td><span class="chip ${item.statusCode === '200' ? 'success' : 'danger'}">${item.statusCode}</span></td>
+          <td>${item.retryCount}</td>
+          <td>${item.successTime}</td>
+          <td>${item.createdAt}</td>
+          <td>${item.updatedAt}</td>
+          <td><button class="link-btn" type="button" data-view-log="${item.id}">查看报文</button></td>
+        `;
+        processLogTableBody.appendChild(row);
+      });
+
+      processLogCount.textContent = `共 ${data.length} 条`;
+    }
+
+    function filterProcessLogs() {
+      const bizType = bizTypeFilter.value.trim();
+      const senderFlag = senderFlagFilter.value.trim();
+      const receiverFlag = receiverFlagFilter.value.trim();
+
+      const filtered = processLogData.filter((item) => {
+        const matchBizType = !bizType || item.bizType === bizType;
+        const matchSender = !senderFlag || item.senderFlag === senderFlag;
+        const matchReceiver = !receiverFlag || item.receiverFlag === receiverFlag;
+        return matchBizType && matchSender && matchReceiver;
+      });
+
+      renderProcessLogTable(filtered);
+    }
+
+    function openLogDetail(item) {
+      logDetailUrl.textContent = item.url;
+      logDetailStatusCode.textContent = item.statusCode;
+      logDetailRequest.textContent = item.requestBody;
+      logDetailResponse.textContent = item.responseBody;
+      logDetailOverlay.hidden = false;
+    }
+
+    function closeProcessLogDetail() {
+      logDetailOverlay.hidden = true;
+    }
+
+    logSearchBtn.addEventListener('click', filterProcessLogs);
+    logResetBtn.addEventListener('click', () => {
+      bizTypeFilter.value = '';
+      senderFlagFilter.value = '';
+      receiverFlagFilter.value = '';
+      renderProcessLogTable(processLogData);
+    });
+
+    processLogTableBody.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-view-log]');
+      if (!button) return;
+      const item = processLogData.find((entry) => entry.id === button.dataset.viewLog);
+      if (!item) return;
+      openLogDetail(item);
+    });
+
+    closeLogDetail.addEventListener('click', closeProcessLogDetail);
+    closeLogDetailBtn.addEventListener('click', closeProcessLogDetail);
+    logDetailOverlay.addEventListener('click', (event) => {
+      if (event.target === logDetailOverlay) {
+        closeProcessLogDetail();
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !logDetailOverlay.hidden) {
+        closeProcessLogDetail();
+      }
+    });
+
+    renderProcessLogTable(processLogData);
+  </script>
+</body>
+</html>

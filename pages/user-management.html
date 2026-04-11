@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>用户管理</title>
+  <link rel="stylesheet" href="../assets/page.css" />
+</head>
+<body>
+  <div class="page">
+    <section class="page-header">
+      <div>
+        <h1>用户管理</h1>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="filters user-filters">
+        <div class="field user-field-keyword">
+          <label>关键字</label>
+          <input id="userKeywordFilter" type="text" placeholder="请输入关键字" />
+        </div>
+        <div class="field">
+          <label>用户角色</label>
+          <select id="userRoleFilter">
+            <option value="">全部角色</option>
+            <option value="Administrator">Administrator</option>
+            <option value="RusRole">RusRole</option>
+            <option value="InboundRole">InboundRole</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>启用状态</label>
+          <select id="userStatusFilter">
+            <option value="">全部</option>
+            <option value="启用">启用</option>
+            <option value="待激活">待激活</option>
+            <option value="停用">停用</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>所属仓库</label>
+          <select id="userWarehouseFilter">
+            <option value="">全部仓库</option>
+            <option value="仓库1">仓库1</option>
+            <option value="仓库2">仓库2</option>
+          </select>
+        </div>
+        <div class="inline-actions user-filter-actions">
+          <button id="userSearchBtn" class="btn" type="button">查询</button>
+          <button id="userResetBtn" class="btn-outline" type="button">重置</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="table-shell" style="margin-top: 16px;">
+      <div class="table-headbar">
+        <button class="btn" type="button">新增</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>序号</th>
+              <th>用户名称</th>
+              <th>用户账号</th>
+              <th>用户权限</th>
+              <th>所属仓库</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody" data-i18n-skip></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="userTableCount">共 0 条</span>
+        <span class="page-size">10条/页</span>
+        <div class="pagination">
+          <span class="page-num active">1</span>
+          <span class="page-num">2</span>
+          <span class="page-num">3</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="resetPasswordOverlay" class="user-dialog-overlay" hidden>
+    <article class="user-dialog user-form-dialog" role="dialog" aria-modal="true" aria-labelledby="resetPasswordTitle">
+      <div class="user-dialog-head">
+        <h3 id="resetPasswordTitle">重置密码</h3>
+        <button id="closeResetPassword" class="user-dialog-close" type="button" aria-label="关闭弹窗">×</button>
+      </div>
+      <div class="user-dialog-body">
+        <div class="user-form-grid">
+          <div class="user-form-row">
+            <label><span class="required-mark">*</span>新密码</label>
+            <input id="newPasswordInput" type="password" />
+          </div>
+          <div class="user-form-row">
+            <label><span class="required-mark">*</span>确认密码</label>
+            <input id="confirmPasswordInput" type="password" />
+          </div>
+          <p id="resetPasswordError" class="user-form-error" hidden></p>
+        </div>
+      </div>
+      <div class="user-dialog-actions">
+        <button id="cancelResetPassword" class="btn-outline" type="button">取消</button>
+        <button id="confirmResetPassword" class="btn" type="button">确认</button>
+      </div>
+    </article>
+  </div>
+
+  <div id="permissionOverlay" class="user-dialog-overlay" hidden>
+    <article class="user-dialog permission-dialog" role="dialog" aria-modal="true" aria-labelledby="permissionTitle">
+      <div class="user-dialog-head">
+        <h3 id="permissionTitle">权限维护</h3>
+        <button id="closePermissionDialog" class="user-dialog-close" type="button" aria-label="关闭弹窗">×</button>
+      </div>
+      <div class="permission-dialog-body">
+        <aside class="permission-module-pane">
+          <label class="permission-check root">
+            <input type="checkbox" checked disabled />
+            <span>全部模块</span>
+          </label>
+          <div id="permissionModuleList" class="permission-module-list" data-i18n-skip></div>
+        </aside>
+        <section class="permission-detail-pane">
+          <div class="permission-toolbar">
+            <label class="permission-check">
+              <input type="checkbox" checked disabled />
+              <span>全部权限</span>
+            </label>
+          </div>
+          <div id="permissionTree" class="permission-tree" data-i18n-skip></div>
+        </section>
+      </div>
+      <div class="user-dialog-actions permission-dialog-actions">
+        <button id="cancelPermissionDialog" class="btn-outline" type="button">取消</button>
+        <button id="confirmPermissionDialog" class="btn" type="button">确认</button>
+      </div>
+    </article>
+  </div>
+
+  <div id="editUserOverlay" class="user-dialog-overlay" hidden>
+    <article class="user-dialog user-form-dialog" role="dialog" aria-modal="true" aria-labelledby="editUserTitle">
+      <div class="user-dialog-head">
+        <h3 id="editUserTitle">编辑用户</h3>
+        <button id="closeEditUser" class="user-dialog-close" type="button" aria-label="关闭弹窗">×</button>
+      </div>
+      <div class="user-dialog-body">
+        <div class="user-form-grid">
+          <div class="user-form-row">
+            <label><span class="required-mark">*</span>用户账号</label>
+            <input id="editUserAccount" type="text" disabled />
+          </div>
+          <div class="user-form-row">
+            <label><span class="required-mark">*</span>用户名称</label>
+            <input id="editUserName" type="text" />
+          </div>
+          <div class="user-form-row">
+            <label>用户权限</label>
+            <select id="editUserRole">
+              <option value="Administrator">Administrator</option>
+              <option value="RusRole">RusRole</option>
+              <option value="InboundRole">InboundRole</option>
+            </select>
+          </div>
+          <p id="editUserError" class="user-form-error" hidden></p>
+        </div>
+      </div>
+      <div class="user-dialog-actions">
+        <button id="cancelEditUser" class="btn-outline" type="button">取消</button>
+        <button id="confirmEditUser" class="btn" type="button">确认</button>
+      </div>
+    </article>
+  </div>
+
+  <div id="deleteUserOverlay" class="user-confirm-overlay" hidden>
+    <article class="user-confirm-card" role="dialog" aria-modal="true" aria-labelledby="deleteUserTitle">
+      <div class="user-confirm-head">
+        <h3 id="deleteUserTitle">提示</h3>
+        <button id="closeDeleteUser" class="user-dialog-close" type="button" aria-label="关闭弹窗">×</button>
+      </div>
+      <div class="user-confirm-body">
+        <span class="user-confirm-icon">!</span>
+        <p>此操作将永久删除该用户，是否继续?</p>
+      </div>
+      <div class="user-confirm-actions">
+        <button id="cancelDeleteUser" class="btn-outline" type="button">取消</button>
+        <button id="confirmDeleteUser" class="btn" type="button">确定</button>
+      </div>
+    </article>
+  </div>
+
+  <script src="../assets/i18n.js"></script>
+  <script>
+    const permissionModules = [
+      { key: 'workspace', label: '工作空间(1)' },
+      { key: 'location-map', label: '库位地图(5)' },
+      { key: 'warehouse', label: '仓库管理(19)' },
+      { key: 'stereo', label: '立库管理(15)' },
+      { key: 'basic', label: '基础管理(16)' },
+      { key: 'inbound', label: '入库管理(19)' },
+      { key: 'outbound', label: '出库管理(14)' },
+      { key: 'inventory', label: '库存管理(3)' },
+      { key: 'strategy', label: '策略管理(10)' },
+      { key: 'task', label: '任务管理(4)' },
+      { key: 'interface', label: '接口管理(3)' },
+      { key: 'permission', label: '权限管理(12)' },
+      { key: 'home', label: '主页(0)' },
+      { key: 'side-map', label: '库位侧地图(0)' },
+      { key: 'pallet', label: '托盘管理(0)' }
+    ];
+
+    const permissionPresets = {
+      Administrator: {
+        warehouse: [
+          { label: '仓库管理', checked: true, children: ['新增', '修改', '启用/停用', '删除'] },
+          { label: '库区管理', checked: true, children: ['新增', '修改', '绑定物料', '启用/停用', '删除'] },
+          { label: '库位管理', checked: true, children: ['批量创建库位', '库位锁定', '库位解锁', '启用', '停用', '绑定库区', '修改'] }
+        ],
+        workspace: [
+          { label: '工作空间', checked: true, children: ['查看首页', '查看一周托盘流动图表', '查看仓库负载数据'] }
+        ],
+        'location-map': [
+          { label: '库位地图', checked: true, children: ['查看库位', '查看托盘信息', '锁定托盘', '移除托盘', '编辑托盘'] }
+        ],
+        stereo: [
+          { label: '立库设备', checked: true, children: ['查看设备状态', '启用/停用', '故障复位'] }
+        ],
+        basic: [
+          { label: '基础资料', checked: true, children: ['物料查询', '仓库配置', '参数修改'] }
+        ],
+        inbound: [
+          { label: '入库管理', checked: true, children: ['查询', '创建任务', '强制完成', '查看详情'] }
+        ],
+        outbound: [
+          { label: '出库管理', checked: true, children: ['查询', '申请出库', '取消任务'] }
+        ],
+        inventory: [
+          { label: '库存管理', checked: true, children: ['查询', '库存调整', '查看库存日志'] }
+        ],
+        strategy: [
+          { label: '策略管理', checked: true, children: ['查看策略', '编辑策略', '启用策略'] }
+        ],
+        task: [
+          { label: '任务管理', checked: true, children: ['查询', '强制完成', '取消', '查看执行日志'] }
+        ],
+        interface: [
+          { label: '接口管理', checked: true, children: ['查询', '查看报文', '重试', '查看流程日志'] }
+        ],
+        permission: [
+          { label: '权限管理', checked: true, children: ['用户管理', '角色管理', '权限查看', '密码重置'] }
+        ]
+      },
+      RusRole: {
+        warehouse: [
+          { label: '仓库管理', checked: true, children: ['查询', '修改'] }
+        ],
+        outbound: [
+          { label: '出库管理', checked: true, children: ['查询', '申请出库'] }
+        ],
+        task: [
+          { label: '任务管理', checked: true, children: ['查询', '强制完成', '取消'] }
+        ],
+        interface: [
+          { label: '接口管理', checked: true, children: ['查询', '查看报文'] }
+        ]
+      },
+      InboundRole: {
+        workspace: [
+          { label: '工作空间', checked: true, children: ['查看首页'] }
+        ],
+        inbound: [
+          { label: '入库管理', checked: true, children: ['查询', '创建入库任务', '查看详情'] }
+        ],
+        pallet: [
+          { label: '托盘管理', checked: true, children: ['查询', '查看托盘'] }
+        ]
+      }
+    };
+
+    let userData = [
+      { id: 'user-001', name: 'SuperAdmin', account: 'SuperAdmin', role: '-', warehouse: '仓库1', status: '启用', system: true },
+      { id: 'user-002', name: 'Demo', account: 'Demo', role: 'Administrator', warehouse: '仓库1', status: '启用' },
+      { id: 'user-003', name: 'operator.inbound', account: 'INB001', role: 'InboundRole', warehouse: '仓库1', status: '启用' },
+      { id: 'user-004', name: 'szt08', account: 'SZT', role: 'RusRole', warehouse: '仓库1', status: '待激活' },
+      { id: 'user-005', name: 'warehouse.admin', account: 'WMS001', role: 'Administrator', warehouse: '仓库2', status: '停用' },
+      { id: 'user-006', name: 'demo.remote', account: 'RUS008', role: 'RusRole', warehouse: '仓库2', status: '启用' }
+    ];
+
+    let currentResetUserId = '';
+    let currentEditUserId = '';
+    let currentDeleteUserId = '';
+    let currentPermissionRole = 'Administrator';
+    let currentPermissionModuleKey = 'warehouse';
+
+    const userKeywordFilter = document.getElementById('userKeywordFilter');
+    const userRoleFilter = document.getElementById('userRoleFilter');
+    const userStatusFilter = document.getElementById('userStatusFilter');
+    const userWarehouseFilter = document.getElementById('userWarehouseFilter');
+    const userSearchBtn = document.getElementById('userSearchBtn');
+    const userResetBtn = document.getElementById('userResetBtn');
+    const userTableBody = document.getElementById('userTableBody');
+    const userTableCount = document.getElementById('userTableCount');
+
+    const resetPasswordOverlay = document.getElementById('resetPasswordOverlay');
+    const newPasswordInput = document.getElementById('newPasswordInput');
+    const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+    const resetPasswordError = document.getElementById('resetPasswordError');
+    const closeResetPassword = document.getElementById('closeResetPassword');
+    const cancelResetPassword = document.getElementById('cancelResetPassword');
+    const confirmResetPassword = document.getElementById('confirmResetPassword');
+
+    const permissionOverlay = document.getElementById('permissionOverlay');
+    const permissionModuleList = document.getElementById('permissionModuleList');
+    const permissionTree = document.getElementById('permissionTree');
+    const closePermissionDialog = document.getElementById('closePermissionDialog');
+    const cancelPermissionDialog = document.getElementById('cancelPermissionDialog');
+    const confirmPermissionDialog = document.getElementById('confirmPermissionDialog');
+
+    const editUserOverlay = document.getElementById('editUserOverlay');
+    const editUserAccount = document.getElementById('editUserAccount');
+    const editUserName = document.getElementById('editUserName');
+    const editUserRole = document.getElementById('editUserRole');
+    const editUserError = document.getElementById('editUserError');
+    const closeEditUser = document.getElementById('closeEditUser');
+    const cancelEditUser = document.getElementById('cancelEditUser');
+    const confirmEditUser = document.getElementById('confirmEditUser');
+
+    const deleteUserOverlay = document.getElementById('deleteUserOverlay');
+    const closeDeleteUser = document.getElementById('closeDeleteUser');
+    const cancelDeleteUser = document.getElementById('cancelDeleteUser');
+    const confirmDeleteUser = document.getElementById('confirmDeleteUser');
+
+    function t(text) {
+      return window.WMSI18N ? window.WMSI18N.translateText(text) : text;
+    }
+
+    function getStatusChipClass(status) {
+      if (status === '启用') return 'success';
+      if (status === '待激活') return 'warning';
+      return 'danger';
+    }
+
+    function renderUserTable(data) {
+      userTableBody.innerHTML = '';
+
+      if (!data.length) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="7" class="table-empty">${t('未查询到符合条件的用户数据')}</td>`;
+        userTableBody.appendChild(row);
+        userTableCount.textContent = t('共 0 条');
+        return;
+      }
+
+      data.forEach((item, index) => {
+        const row = document.createElement('tr');
+        const actions = item.system
+          ? '<button class="link-btn" type="button" data-action="reset" data-id="' + item.id + '">' + t('密码重置') + '</button>'
+          : [
+              '<button class="link-btn" type="button" data-action="permission" data-id="' + item.id + '">' + t('权限查看') + '</button>',
+              '<button class="link-btn" type="button" data-action="reset" data-id="' + item.id + '">' + t('密码重置') + '</button>',
+              '<button class="link-btn" type="button" data-action="edit" data-id="' + item.id + '">' + t('修改') + '</button>',
+              '<button class="link-btn danger" type="button" data-action="delete" data-id="' + item.id + '">' + t('删除') + '</button>'
+            ].join('');
+
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${item.name}</td>
+          <td>${item.account}</td>
+          <td>${item.role}</td>
+          <td>${t(item.warehouse)}</td>
+          <td><span class="chip ${getStatusChipClass(item.status)}">${t(item.status)}</span></td>
+          <td>${actions}</td>
+        `;
+        userTableBody.appendChild(row);
+      });
+
+      userTableCount.textContent = t(`共 ${data.length} 条`);
+    }
+
+    function getFilteredUsers() {
+      const keyword = userKeywordFilter.value.trim().toLowerCase();
+      const role = userRoleFilter.value.trim();
+      const status = userStatusFilter.value.trim();
+      const warehouse = userWarehouseFilter.value.trim();
+
+      return userData.filter((item) => {
+        const matchKeyword = !keyword
+          || item.name.toLowerCase().includes(keyword)
+          || item.account.toLowerCase().includes(keyword);
+        const matchRole = !role || item.role === role;
+        const matchStatus = !status || item.status === status;
+        const matchWarehouse = !warehouse || item.warehouse === warehouse;
+        return matchKeyword && matchRole && matchStatus && matchWarehouse;
+      });
+    }
+
+    function filterUsers() {
+      renderUserTable(getFilteredUsers());
+    }
+
+    function resetUserFilters() {
+      userKeywordFilter.value = '';
+      userRoleFilter.value = '';
+      userStatusFilter.value = '';
+      userWarehouseFilter.value = '';
+      renderUserTable(userData);
+    }
+
+    function closeOverlay(overlay) {
+      overlay.hidden = true;
+    }
+
+    function openResetPassword(userId) {
+      currentResetUserId = userId;
+      newPasswordInput.value = '';
+      confirmPasswordInput.value = '';
+      resetPasswordError.hidden = true;
+      resetPasswordError.textContent = '';
+      resetPasswordOverlay.hidden = false;
+    }
+
+    function openPermissionDialog(userId) {
+      const user = userData.find((item) => item.id === userId);
+      if (!user) return;
+
+      currentPermissionRole = user.role === '-' ? 'Administrator' : user.role;
+      currentPermissionModuleKey = getFirstPermissionModuleKey(currentPermissionRole);
+      renderPermissionModules();
+      renderPermissionTree();
+      permissionOverlay.hidden = false;
+    }
+
+    function getCurrentPermissionPreset() {
+      return permissionPresets[currentPermissionRole] || permissionPresets.Administrator;
+    }
+
+    function getFirstPermissionModuleKey(role) {
+      const preset = permissionPresets[role] || permissionPresets.Administrator;
+      const firstModule = permissionModules.find((module) => preset[module.key] && preset[module.key].length);
+      return firstModule ? firstModule.key : permissionModules[0].key;
+    }
+
+    function renderPermissionModules() {
+      const preset = getCurrentPermissionPreset();
+      permissionModuleList.innerHTML = permissionModules
+        .map((module) => {
+          const isActive = module.key === currentPermissionModuleKey;
+          const hasPermission = Boolean(preset[module.key] && preset[module.key].length);
+          return `
+            <button
+              class="permission-module-item${isActive ? ' active' : ''}${hasPermission ? '' : ' muted'}"
+              type="button"
+              data-module-key="${module.key}"
+            >
+              ${t(module.label)}
+            </button>
+          `;
+        })
+        .join('');
+    }
+
+    function renderPermissionTree() {
+      const preset = getCurrentPermissionPreset();
+      const treeData = preset[currentPermissionModuleKey] || [];
+
+      if (!treeData.length) {
+        permissionTree.innerHTML = `<div class="permission-empty">${t('当前模块暂无权限配置')}</div>`;
+        return;
+      }
+
+      permissionTree.innerHTML = treeData.map((group) => `
+        <section class="permission-group">
+          <label class="permission-check group">
+            <span class="permission-arrow">▾</span>
+            <input type="checkbox" ${group.checked ? 'checked' : ''} disabled />
+            <span>${t(group.label)}</span>
+          </label>
+          <div class="permission-children">
+            ${group.children.map((child) => `
+              <label class="permission-check child">
+                <input type="checkbox" checked disabled />
+                <span>${t(child)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </section>
+      `).join('');
+    }
+
+    function openEditDialog(userId) {
+      const user = userData.find((item) => item.id === userId);
+      if (!user) return;
+
+      currentEditUserId = userId;
+      editUserAccount.value = user.account;
+      editUserName.value = user.name;
+      editUserRole.value = user.role === '-' ? 'Administrator' : user.role;
+      editUserError.hidden = true;
+      editUserError.textContent = '';
+      editUserOverlay.hidden = false;
+    }
+
+    function openDeleteDialog(userId) {
+      currentDeleteUserId = userId;
+      deleteUserOverlay.hidden = false;
+    }
+
+    function submitResetPassword() {
+      const password = newPasswordInput.value.trim();
+      const confirmPassword = confirmPasswordInput.value.trim();
+
+      if (!password || !confirmPassword) {
+        resetPasswordError.textContent = t('请填写新密码和确认密码。');
+        resetPasswordError.hidden = false;
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        resetPasswordError.textContent = t('两次输入的密码不一致，请重新输入。');
+        resetPasswordError.hidden = false;
+        return;
+      }
+
+      closeOverlay(resetPasswordOverlay);
+      currentResetUserId = '';
+    }
+
+    function submitEditUser() {
+      const nextName = editUserName.value.trim();
+      const nextRole = editUserRole.value.trim();
+
+      if (!nextName) {
+        editUserError.textContent = t('用户名称不能为空。');
+        editUserError.hidden = false;
+        return;
+      }
+
+      userData = userData.map((item) => {
+        if (item.id !== currentEditUserId) return item;
+        return {
+          ...item,
+          name: nextName,
+          role: nextRole
+        };
+      });
+
+      closeOverlay(editUserOverlay);
+      currentEditUserId = '';
+      filterUsers();
+    }
+
+    function submitDeleteUser() {
+      userData = userData.filter((item) => item.id !== currentDeleteUserId);
+      closeOverlay(deleteUserOverlay);
+      currentDeleteUserId = '';
+      filterUsers();
+    }
+
+    userSearchBtn.addEventListener('click', filterUsers);
+    userResetBtn.addEventListener('click', resetUserFilters);
+    userKeywordFilter.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        filterUsers();
+      }
+    });
+
+    permissionModuleList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-module-key]');
+      if (!button) return;
+      currentPermissionModuleKey = button.dataset.moduleKey;
+      renderPermissionModules();
+      renderPermissionTree();
+    });
+
+    userTableBody.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+
+      const action = button.dataset.action;
+      const userId = button.dataset.id;
+
+      if (action === 'reset') openResetPassword(userId);
+      if (action === 'permission') openPermissionDialog(userId);
+      if (action === 'edit') openEditDialog(userId);
+      if (action === 'delete') openDeleteDialog(userId);
+    });
+
+    closeResetPassword.addEventListener('click', () => closeOverlay(resetPasswordOverlay));
+    cancelResetPassword.addEventListener('click', () => closeOverlay(resetPasswordOverlay));
+    confirmResetPassword.addEventListener('click', submitResetPassword);
+
+    closePermissionDialog.addEventListener('click', () => closeOverlay(permissionOverlay));
+    cancelPermissionDialog.addEventListener('click', () => closeOverlay(permissionOverlay));
+    confirmPermissionDialog.addEventListener('click', () => closeOverlay(permissionOverlay));
+
+    closeEditUser.addEventListener('click', () => closeOverlay(editUserOverlay));
+    cancelEditUser.addEventListener('click', () => closeOverlay(editUserOverlay));
+    confirmEditUser.addEventListener('click', submitEditUser);
+
+    closeDeleteUser.addEventListener('click', () => closeOverlay(deleteUserOverlay));
+    cancelDeleteUser.addEventListener('click', () => closeOverlay(deleteUserOverlay));
+    confirmDeleteUser.addEventListener('click', submitDeleteUser);
+
+    [resetPasswordOverlay, permissionOverlay, editUserOverlay, deleteUserOverlay].forEach((overlay) => {
+      overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) {
+          closeOverlay(overlay);
+        }
+      });
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      [resetPasswordOverlay, permissionOverlay, editUserOverlay, deleteUserOverlay].forEach((overlay) => {
+        if (!overlay.hidden) {
+          closeOverlay(overlay);
+        }
+      });
+    });
+
+    window.addEventListener('wms-language-change', () => {
+      filterUsers();
+
+      if (!permissionOverlay.hidden) {
+        renderPermissionModules();
+        renderPermissionTree();
+      }
+    });
+
+    filterUsers();
+  </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZYC WMS 高保真原型</title>
+  <link rel="stylesheet" href="./assets/main.css" />
+</head>
+<body>
+  <div class="layout-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">ZYC</span>
+        <span class="brand-name">仓储管理系统</span>
+      </div>
+
+      <nav class="menu-tree">
+        <button class="menu-link menu-link-root active" type="button" data-page="dashboard" data-menu-id="menu-dashboard">仪表盘</button>
+
+        <button class="menu-link menu-link-root" type="button" data-page="location-layout" data-menu-id="menu-location-layout">库位布局</button>
+
+        <button class="menu-link menu-link-root" type="button" data-page="pallet-list" data-menu-id="menu-pallet-list">托盘列表</button>
+
+        <section class="menu-group open">
+          <button class="menu-parent" type="button" data-group-toggle>
+            <span>任务管理</span>
+            <span class="menu-arrow" aria-hidden="true"></span>
+          </button>
+          <div class="menu-children">
+            <button class="menu-link" type="button" data-page="task-list" data-menu-id="menu-task-list">任务列表</button>
+          </div>
+        </section>
+
+        <section class="menu-group open">
+          <button class="menu-parent" type="button" data-group-toggle>
+            <span>接口管理</span>
+            <span class="menu-arrow" aria-hidden="true"></span>
+          </button>
+          <div class="menu-children">
+            <button class="menu-link" type="button" data-page="process-log" data-menu-id="menu-process-log">接口日志</button>
+          </div>
+        </section>
+
+        <section class="menu-group open">
+          <button class="menu-parent" type="button" data-group-toggle>
+            <span>权限管理</span>
+            <span class="menu-arrow" aria-hidden="true"></span>
+          </button>
+          <div class="menu-children">
+            <button class="menu-link" type="button" data-page="user-management" data-menu-id="menu-user-management">用户管理</button>
+            <button class="menu-link" type="button" data-page="role-permission" data-menu-id="menu-role-permission">角色权限管理</button>
+          </div>
+        </section>
+      </nav>
+    </aside>
+
+    <main class="main-shell">
+      <header class="global-header">
+        <div class="header-left">
+          <button class="header-btn" type="button">=</button>
+          <div class="header-path">
+            <span id="headerGroup">工作空间</span>
+            <span id="headerSlash">/</span>
+            <strong id="headerTitle">仪表盘</strong>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="lang-switch" id="langSwitch" aria-label="Language">
+            <button class="lang-btn active" type="button" data-lang="zh">中文</button>
+            <button class="lang-btn" type="button" data-lang="en">EN</button>
+          </div>
+          <div class="user-box">
+            <span class="avatar">D</span>
+            <span>Demo</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="tabs-strip">
+        <div class="tabs">
+          <div class="tabs-list" id="tabsList"></div>
+          <button class="refresh-btn" type="button" onclick="document.getElementById('contentFrame').contentWindow.location.reload()">R</button>
+        </div>
+      </section>
+
+      <section class="frame-shell">
+        <iframe id="contentFrame" title="ZYC WMS 原型内容区域" src="./pages/dashboard.html"></iframe>
+      </section>
+    </main>
+  </div>
+
+  <script src="./assets/i18n.js"></script>
+  <script src="./assets/main.js"></script>
+</body>
+</html>

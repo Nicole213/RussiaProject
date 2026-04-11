@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>库位布局</title>
+  <link rel="stylesheet" href="../assets/page.css" />
+</head>
+<body>
+  <div class="page">
+    <section class="page-header">
+      <div>
+        <h1>库位布局图</h1>
+      </div>
+    </section>
+
+    <section class="panel rack-layout-panel">
+      <div class="panel-title">
+        <h3>仓库库位布局图</h3>
+        <div class="legend">
+          <span class="chip info">2排 / 9列 / 46层</span>
+          <span class="chip success">总层位 828</span>
+        </div>
+      </div>
+
+      <div class="rack-legend">
+        <span><i class="rack-legend-swatch pallet"></i>托盘与货物占用层</span>
+        <span><i class="rack-legend-swatch clearance"></i>预留空隙层</span>
+        <span><i class="rack-legend-swatch empty"></i>空层位</span>
+      </div>
+
+      <div id="rackLayoutBoard" class="rack-layout-board"></div>
+    </section>
+  </div>
+
+  <div id="palletCardOverlay" class="pallet-card-overlay" hidden>
+    <article class="pallet-card" role="dialog" aria-modal="true" aria-labelledby="palletCardTitle">
+      <div class="pallet-card-head">
+        <div>
+          <h3 id="palletCardTitle">托盘详情</h3>
+        </div>
+        <button id="closePalletCard" class="pallet-card-close" type="button" aria-label="关闭信息卡片">x</button>
+      </div>
+
+      <div class="pallet-card-body">
+        <div class="pallet-card-note" id="palletCargoName"></div>
+
+        <div class="pallet-info-grid">
+          <div class="pallet-info-item">
+            <div class="pallet-info-head">
+              <span class="pallet-info-label">托盘编码</span>
+              <button id="editCodeBtn" class="link-btn pallet-inline-btn" type="button">编辑</button>
+            </div>
+            <strong id="palletCodeText"></strong>
+            <input id="palletCodeInput" class="pallet-inline-input" type="text" hidden />
+          </div>
+          <div class="pallet-info-item">
+            <div class="pallet-info-head">
+              <span class="pallet-info-label">托盘规格</span>
+              <button id="editSpecBtn" class="link-btn pallet-inline-btn" type="button">编辑</button>
+            </div>
+            <strong id="palletSpecText"></strong>
+            <input id="palletSpecInput" class="pallet-inline-input" type="text" hidden />
+          </div>
+          <div class="pallet-info-item">
+            <span class="pallet-info-label">高度</span>
+            <strong id="palletHeightText"></strong>
+          </div>
+          <div class="pallet-info-item">
+            <span class="pallet-info-label">位置</span>
+            <strong id="palletAddressText"></strong>
+          </div>
+          <div class="pallet-info-item span-2">
+            <span class="pallet-info-label">锁定状态</span>
+            <div><span id="palletStatusChip" class="chip"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pallet-card-actions">
+        <button id="clearPalletBtn" class="btn-outline" type="button">清空托盘</button>
+        <button id="toggleLockBtn" class="btn-soft" type="button">锁定</button>
+        <button id="removePalletBtn" class="btn-danger" type="button">移除</button>
+      </div>
+    </article>
+  </div>
+
+  <div id="confirmOverlay" class="confirm-overlay" hidden>
+    <article class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <h3 id="confirmTitle">操作确认</h3>
+      <p id="confirmMessage"></p>
+      <div class="confirm-actions">
+        <button id="confirmCancelBtn" class="btn-outline" type="button">取消</button>
+        <button id="confirmActionBtn" class="btn" type="button">确认</button>
+      </div>
+    </article>
+  </div>
+
+  <script src="../assets/i18n.js"></script>
+  <script>
+    const TOTAL_LEVELS = 46;
+    const defaultSpecs = ['1200 x 1000', '1200 x 1100', '1400 x 1100', '1300 x 1200'];
+    let rackRows = [
+      {
+        name: '1排',
+        note: '上层库排，用于大件与高货型托盘混合存放',
+        columns: [
+          { id: '01', placements: [{ start: 1, height: 5, clearance: 1, pallet: 'PLT-240401', cargo: '物料A' }, { start: 7, height: 4, clearance: 1, pallet: 'PLT-240427', cargo: '物料B' }] },
+          { id: '02', placements: [{ start: 2, height: 3, clearance: 1, pallet: 'PLT-240312', cargo: '物料C' }, { start: 12, height: 6, clearance: 1, pallet: 'PLT-240356', cargo: '物料D' }] },
+          { id: '03', placements: [{ start: 1, height: 4, clearance: 1, pallet: 'PLT-240318', cargo: '物料E' }, { start: 9, height: 5, clearance: 1, pallet: 'PLT-240372', cargo: '物料F' }] },
+          { id: '04', placements: [{ start: 4, height: 5, clearance: 1, pallet: 'PLT-240389', cargo: '物料G' }, { start: 15, height: 4, clearance: 1, pallet: 'PLT-240395', cargo: '物料H' }] },
+          { id: '05', placements: [{ start: 1, height: 6, clearance: 1, pallet: 'PLT-240406', cargo: '物料I' }, { start: 10, height: 3, clearance: 1, pallet: 'PLT-240412', cargo: '物料J' }] },
+          { id: '06', placements: [{ start: 6, height: 4, clearance: 1, pallet: 'PLT-240421', cargo: '物料K' }, { start: 14, height: 5, clearance: 1, pallet: 'PLT-240428', cargo: '物料L' }] },
+          { id: '07', placements: [{ start: 3, height: 3, clearance: 1, pallet: 'PLT-240432', cargo: '物料M' }, { start: 9, height: 4, clearance: 1, pallet: 'PLT-240439', cargo: '物料N' }] },
+          { id: '08', placements: [{ start: 1, height: 5, clearance: 1, pallet: 'PLT-240447', cargo: '物料O' }, { start: 8, height: 5, clearance: 1, pallet: 'PLT-240453', cargo: '物料P' }] },
+          { id: '09', placements: [{ start: 2, height: 4, clearance: 1, pallet: 'PLT-240466', cargo: '物料Q' }, { start: 11, height: 6, clearance: 1, pallet: 'PLT-240472', cargo: '物料R' }] }
+        ]
+      },
+      {
+        name: '2排',
+        note: '下层库排，用于常规周转与中高货型托盘存放',
+        columns: [
+          { id: '01', placements: [{ start: 1, height: 3, clearance: 1, pallet: 'PLT-240501', cargo: '物料S' }, { start: 8, height: 4, clearance: 1, pallet: 'PLT-240508', cargo: '物料T' }] },
+          { id: '02', placements: [{ start: 5, height: 5, clearance: 1, pallet: 'PLT-240514', cargo: '物料U' }, { start: 13, height: 3, clearance: 1, pallet: 'PLT-240519', cargo: '物料V' }] },
+          { id: '03', placements: [{ start: 1, height: 4, clearance: 1, pallet: 'PLT-240523', cargo: '物料W' }, { start: 7, height: 4, clearance: 1, pallet: 'PLT-240529', cargo: '物料X' }] },
+          { id: '04', placements: [{ start: 2, height: 6, clearance: 1, pallet: 'PLT-240536', cargo: '物料Y' }] },
+          { id: '05', placements: [{ start: 1, height: 3, clearance: 1, pallet: 'PLT-240541', cargo: '物料Z' }, { start: 6, height: 5, clearance: 1, pallet: 'PLT-240548', cargo: '物料AA' }] },
+          { id: '06', placements: [{ start: 4, height: 4, clearance: 1, pallet: 'PLT-240552', cargo: '物料AB' }, { start: 11, height: 4, clearance: 1, pallet: 'PLT-240559', cargo: '物料AC' }] },
+          { id: '07', placements: [{ start: 1, height: 5, clearance: 1, pallet: 'PLT-240563', cargo: '物料AD' }] },
+          { id: '08', placements: [{ start: 3, height: 4, clearance: 1, pallet: 'PLT-240571', cargo: '物料AE' }, { start: 9, height: 5, clearance: 1, pallet: 'PLT-240577', cargo: '物料AF' }] },
+          { id: '09', placements: [{ start: 2, height: 3, clearance: 1, pallet: 'PLT-240582', cargo: '物料AG' }, { start: 7, height: 6, clearance: 1, pallet: 'PLT-240588', cargo: '物料AH' }] }
+        ]
+      }
+    ];
+
+    const board = document.getElementById('rackLayoutBoard');
+    const palletCardOverlay = document.getElementById('palletCardOverlay');
+    const closePalletCard = document.getElementById('closePalletCard');
+    const palletCargoName = document.getElementById('palletCargoName');
+    const palletCodeText = document.getElementById('palletCodeText');
+    const palletSpecText = document.getElementById('palletSpecText');
+    const palletCodeInput = document.getElementById('palletCodeInput');
+    const palletSpecInput = document.getElementById('palletSpecInput');
+    const palletHeightText = document.getElementById('palletHeightText');
+    const palletAddressText = document.getElementById('palletAddressText');
+    const palletStatusChip = document.getElementById('palletStatusChip');
+    const editCodeBtn = document.getElementById('editCodeBtn');
+    const editSpecBtn = document.getElementById('editSpecBtn');
+    const clearPalletBtn = document.getElementById('clearPalletBtn');
+    const toggleLockBtn = document.getElementById('toggleLockBtn');
+    const removePalletBtn = document.getElementById('removePalletBtn');
+    const confirmOverlay = document.getElementById('confirmOverlay');
+    const confirmTitle = document.getElementById('confirmTitle');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+    const confirmActionBtn = document.getElementById('confirmActionBtn');
+    let selectedPlacementRef = null;
+    let codeEditing = false;
+    let specEditing = false;
+    let pendingConfirmAction = null;
+
+    rackRows = rackRows.map((row, rowIndex) => ({
+      ...row,
+      columns: row.columns.map((column, columnIndex) => ({
+        ...column,
+        placements: column.placements.map((item, placementIndex) => ({
+          ...item,
+          spec: item.spec || defaultSpecs[(rowIndex + columnIndex + placementIndex) % defaultSpecs.length],
+          heightMm: item.heightMm || 180 + item.height * 280,
+          status: item.status || ((rowIndex + columnIndex + placementIndex) % 6 === 0 ? '锁定' : '正常')
+        }))
+      }))
+    }));
+
+    function toGridStart(startLevelFromBottom, height) {
+      return TOTAL_LEVELS - (startLevelFromBottom + height - 1) + 1;
+    }
+
+    function getPlacement(ref) {
+      if (!ref) return null;
+      return rackRows[ref.rowIndex]?.columns?.[ref.columnIndex]?.placements?.[ref.placementIndex] || null;
+    }
+
+    function getAddress(ref, item) {
+      return `${ref.rowIndex + 1}-${parseInt(rackRows[ref.rowIndex].columns[ref.columnIndex].id, 10)}-${item.start}`;
+    }
+
+    function getHeightText(item) {
+      if (item.isEmpty) {
+        return '';
+      }
+      return `${item.heightMm} mm（占用 ${item.height} 层）`;
+    }
+
+    function syncInlineEditor(isEditing, valueEl, inputEl, buttonEl, value) {
+      valueEl.hidden = isEditing;
+      inputEl.hidden = !isEditing;
+      inputEl.value = value;
+      buttonEl.textContent = isEditing ? '保存' : '编辑';
+    }
+
+    function closeInfoCard() {
+      palletCardOverlay.hidden = true;
+      selectedPlacementRef = null;
+      codeEditing = false;
+      specEditing = false;
+    }
+
+    function openConfirmDialog(title, message, actionLabel, onConfirm) {
+      pendingConfirmAction = onConfirm;
+      confirmTitle.textContent = title;
+      confirmMessage.textContent = message;
+      confirmActionBtn.textContent = actionLabel;
+      confirmOverlay.hidden = false;
+    }
+
+    function closeConfirmDialog() {
+      confirmOverlay.hidden = true;
+      pendingConfirmAction = null;
+    }
+
+    function syncInfoCard() {
+      const item = getPlacement(selectedPlacementRef);
+      if (!item) {
+        closeInfoCard();
+        return;
+      }
+
+      const isEmpty = Boolean(item.isEmpty);
+      palletCargoName.textContent = isEmpty ? '当前无托盘信息' : `货物：${item.cargo}`;
+      palletCodeText.textContent = isEmpty ? '' : item.pallet;
+      palletSpecText.textContent = isEmpty ? '' : item.spec;
+      palletHeightText.textContent = getHeightText(item);
+      palletAddressText.textContent = isEmpty ? '' : getAddress(selectedPlacementRef, item);
+      palletStatusChip.textContent = isEmpty ? '' : item.status;
+      palletStatusChip.className = isEmpty ? 'chip' : `chip ${item.status === '锁定' ? 'danger' : 'success'}`;
+      palletStatusChip.hidden = isEmpty;
+      toggleLockBtn.textContent = isEmpty ? '锁定' : (item.status === '锁定' ? '解锁' : '锁定');
+      clearPalletBtn.textContent = isEmpty ? '已清空' : '清空托盘';
+      clearPalletBtn.disabled = isEmpty;
+      editCodeBtn.disabled = isEmpty;
+      editSpecBtn.disabled = isEmpty;
+      toggleLockBtn.disabled = isEmpty;
+      removePalletBtn.disabled = isEmpty;
+      syncInlineEditor(codeEditing && !isEmpty, palletCodeText, palletCodeInput, editCodeBtn, item.pallet);
+      syncInlineEditor(specEditing && !isEmpty, palletSpecText, palletSpecInput, editSpecBtn, item.spec);
+    }
+
+    function openInfoCard(ref) {
+      selectedPlacementRef = ref;
+      codeEditing = false;
+      specEditing = false;
+      syncInfoCard();
+      palletCardOverlay.hidden = false;
+    }
+
+    function createScale() {
+      const scale = document.createElement('div');
+      scale.className = 'rack-scale';
+
+      for (let level = TOTAL_LEVELS; level >= 1; level -= 1) {
+        const tick = document.createElement('span');
+        tick.className = 'rack-scale-tick';
+        tick.textContent = level === TOTAL_LEVELS || level === 1 || level % 5 === 0 ? level : '';
+        scale.appendChild(tick);
+      }
+
+      return scale;
+    }
+
+    function createColumn(column, rowIndex, columnIndex) {
+      const columnEl = document.createElement('article');
+      columnEl.className = 'rack-column';
+
+      const head = document.createElement('div');
+      head.className = 'rack-column-head';
+      head.innerHTML = `<strong>${column.id}列</strong><span>46层</span>`;
+      columnEl.appendChild(head);
+
+      const levels = document.createElement('div');
+      levels.className = 'rack-levels';
+
+      const clearanceLevels = new Set();
+      column.placements.forEach((item) => {
+        for (let i = 0; i < item.clearance; i += 1) {
+          clearanceLevels.add(item.start + item.height + i);
+        }
+      });
+
+      for (let level = TOTAL_LEVELS; level >= 1; level -= 1) {
+        const slot = document.createElement('div');
+        slot.className = 'rack-slot';
+        if (clearanceLevels.has(level)) {
+          slot.classList.add('is-clearance');
+          slot.title = `第 ${level} 层预留空隙`;
+        } else {
+          slot.title = `第 ${level} 层`;
+        }
+        levels.appendChild(slot);
+      }
+
+      column.placements.forEach((item, index) => {
+        const load = document.createElement('div');
+        load.className = 'rack-load';
+        if (index % 2 === 1) {
+          load.classList.add('alt');
+        }
+        if (item.status === '锁定') {
+          load.classList.add('is-locked');
+        }
+        load.style.gridRow = `${toGridStart(item.start, item.height)} / span ${item.height}`;
+        load.tabIndex = 0;
+        load.dataset.rowIndex = rowIndex;
+        load.dataset.columnIndex = columnIndex;
+        load.dataset.placementIndex = index;
+        load.innerHTML = `
+          <span class="rack-load-cargo">${item.cargo}</span>
+          <span class="rack-load-pallet">${item.pallet}</span>
+        `;
+        load.title = `${item.pallet}：第 ${item.start} 层放托盘，占用 ${item.height} 层，顶部预留 ${item.clearance} 层`;
+        load.addEventListener('click', () => openInfoCard({ rowIndex, columnIndex, placementIndex: index }));
+        load.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openInfoCard({ rowIndex, columnIndex, placementIndex: index });
+          }
+        });
+        levels.appendChild(load);
+      });
+
+      columnEl.appendChild(levels);
+      return columnEl;
+    }
+
+    function renderBoard() {
+      board.innerHTML = '';
+
+      rackRows.forEach((row, rowIndex) => {
+        const rowCard = document.createElement('section');
+        rowCard.className = 'rack-row-card';
+
+        const rowHeader = document.createElement('div');
+        rowHeader.className = 'rack-row-header';
+        rowHeader.innerHTML = `
+          <div>
+            <h4>${row.name}</h4>
+          </div>
+          <span class="chip info">9列 × 46层</span>
+        `;
+        rowCard.appendChild(rowHeader);
+
+        const rackBody = document.createElement('div');
+        rackBody.className = 'rack-row-body';
+        rackBody.appendChild(createScale());
+
+        const columns = document.createElement('div');
+        columns.className = 'rack-columns';
+        row.columns.forEach((column, columnIndex) => {
+          columns.appendChild(createColumn(column, rowIndex, columnIndex));
+        });
+
+        rackBody.appendChild(columns);
+        rowCard.appendChild(rackBody);
+        board.appendChild(rowCard);
+      });
+    }
+
+    editCodeBtn.addEventListener('click', () => {
+      const item = getPlacement(selectedPlacementRef);
+      if (!item) return;
+
+      if (!codeEditing) {
+        if (item.isEmpty) return;
+        codeEditing = true;
+        syncInfoCard();
+        palletCodeInput.focus();
+        palletCodeInput.select();
+        return;
+      }
+
+      item.pallet = palletCodeInput.value.trim() || item.pallet;
+      codeEditing = false;
+      renderBoard();
+      syncInfoCard();
+    });
+
+    editSpecBtn.addEventListener('click', () => {
+      const item = getPlacement(selectedPlacementRef);
+      if (!item) return;
+
+      if (!specEditing) {
+        if (item.isEmpty) return;
+        specEditing = true;
+        syncInfoCard();
+        palletSpecInput.focus();
+        palletSpecInput.select();
+        return;
+      }
+
+      item.spec = palletSpecInput.value.trim() || item.spec;
+      specEditing = false;
+      renderBoard();
+      syncInfoCard();
+    });
+
+    clearPalletBtn.addEventListener('click', () => {
+      const item = getPlacement(selectedPlacementRef);
+      if (!item) return;
+
+      openConfirmDialog(
+        '确认清空托盘',
+        `确认要清空托盘 ${item.pallet} 吗？确认后该托盘将变为空托。`,
+        '确认清空',
+        () => {
+          item.cargo = '空托盘';
+          item.isEmpty = true;
+          item.height = 1;
+          item.heightMm = 150;
+          item.clearance = 0;
+          renderBoard();
+          syncInfoCard();
+        }
+      );
+    });
+
+    toggleLockBtn.addEventListener('click', () => {
+      const item = getPlacement(selectedPlacementRef);
+      if (!item) return;
+
+      const willLock = item.status !== '锁定';
+      openConfirmDialog(
+        willLock ? '确认锁定托盘' : '确认解锁托盘',
+        willLock
+          ? `确认要锁定托盘 ${item.pallet} 吗？锁定后将显示为锁定状态。`
+          : `确认要解锁托盘 ${item.pallet} 吗？解锁后将恢复为正常状态。`,
+        willLock ? '确认锁定' : '确认解锁',
+        () => {
+          item.status = willLock ? '锁定' : '正常';
+          renderBoard();
+          syncInfoCard();
+        }
+      );
+    });
+
+    removePalletBtn.addEventListener('click', () => {
+      if (!selectedPlacementRef) return;
+
+      const column = rackRows[selectedPlacementRef.rowIndex].columns[selectedPlacementRef.columnIndex];
+      const item = column.placements[selectedPlacementRef.placementIndex];
+
+      openConfirmDialog(
+        '确认移除托盘',
+        `确认要将托盘 ${item.pallet} 从当前库位移除吗？确认后该库位将无托盘信息。`,
+        '确认移除',
+        () => {
+          column.placements.splice(selectedPlacementRef.placementIndex, 1);
+          renderBoard();
+          closeInfoCard();
+        }
+      );
+    });
+
+    closePalletCard.addEventListener('click', closeInfoCard);
+    palletCardOverlay.addEventListener('click', (event) => {
+      if (event.target === palletCardOverlay) {
+        closeInfoCard();
+      }
+    });
+    confirmCancelBtn.addEventListener('click', closeConfirmDialog);
+    confirmActionBtn.addEventListener('click', () => {
+      if (pendingConfirmAction) {
+        pendingConfirmAction();
+      }
+      closeConfirmDialog();
+    });
+    confirmOverlay.addEventListener('click', (event) => {
+      if (event.target === confirmOverlay) {
+        closeConfirmDialog();
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !confirmOverlay.hidden) {
+        closeConfirmDialog();
+        return;
+      }
+
+      if (event.key === 'Escape' && !palletCardOverlay.hidden) {
+        closeInfoCard();
+      }
+    });
+
+    renderBoard();
+  </script>
+</body>
+</html>

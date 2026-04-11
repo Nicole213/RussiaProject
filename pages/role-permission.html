@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>角色权限管理</title>
+  <link rel="stylesheet" href="../assets/page.css" />
+</head>
+<body>
+  <div class="page">
+    <section class="page-header">
+      <div>
+        <h1>角色权限管理</h1>
+      </div>
+    </section>
+
+    <section class="table-shell" style="margin-top: 16px;">
+      <div class="table-headbar">
+        <button id="addRoleBtn" class="btn" type="button">新增</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>序号</th>
+              <th>角色名称</th>
+              <th>备注</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="roleTableBody" data-i18n-skip></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div id="rolePermissionOverlay" class="user-dialog-overlay" hidden>
+    <article class="user-dialog permission-dialog role-permission-dialog" role="dialog" aria-modal="true" aria-labelledby="rolePermissionTitle">
+      <div class="user-dialog-head">
+        <h3 id="rolePermissionTitle">权限维护</h3>
+        <button id="closeRolePermission" class="user-dialog-close" type="button" aria-label="关闭弹窗">×</button>
+      </div>
+      <div class="permission-dialog-body role-permission-body">
+        <aside class="permission-module-pane">
+          <label class="permission-check root">
+            <input id="allModulesCheckbox" type="checkbox" />
+            <span>全部模块</span>
+          </label>
+          <div id="rolePermissionModuleList" class="permission-module-list" data-i18n-skip></div>
+        </aside>
+        <section class="permission-detail-pane">
+          <div class="permission-toolbar">
+            <label class="permission-check">
+              <input id="allPermissionsCheckbox" type="checkbox" />
+              <span>全部权限</span>
+            </label>
+          </div>
+          <div id="rolePermissionTree" class="permission-tree" data-i18n-skip></div>
+        </section>
+      </div>
+      <div class="user-dialog-actions permission-dialog-actions">
+        <button id="cancelRolePermission" class="btn-outline" type="button">取消</button>
+        <button id="confirmRolePermission" class="btn" type="button">确认</button>
+      </div>
+    </article>
+  </div>
+
+  <div id="editRoleOverlay" class="user-dialog-overlay" hidden>
+    <article class="user-dialog user-form-dialog role-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="editRoleTitle">
+      <div class="user-dialog-head">
+        <h3 id="editRoleTitle">编辑角色</h3>
+        <button id="closeEditRole" class="user-dialog-close" type="button" aria-label="关闭弹窗">×</button>
+      </div>
+      <div class="user-dialog-body">
+        <div class="user-form-grid">
+          <div class="user-form-row">
+            <label><span class="required-mark">*</span>角色名称</label>
+            <input id="editRoleName" type="text" />
+          </div>
+          <div class="user-form-row">
+            <label>备注</label>
+            <textarea id="editRoleRemark"></textarea>
+          </div>
+          <p id="editRoleError" class="user-form-error" hidden></p>
+        </div>
+      </div>
+      <div class="user-dialog-actions">
+        <button id="cancelEditRole" class="btn-outline" type="button">取消</button>
+        <button id="confirmEditRole" class="btn" type="button">确认</button>
+      </div>
+    </article>
+  </div>
+
+  <div id="deleteRoleOverlay" class="user-confirm-overlay" hidden>
+    <article class="user-confirm-card" role="dialog" aria-modal="true" aria-labelledby="deleteRoleTitle">
+      <div class="user-confirm-head">
+        <h3 id="deleteRoleTitle">提示</h3>
+        <button id="closeDeleteRole" class="user-dialog-close" type="button" aria-label="关闭弹窗">×</button>
+      </div>
+      <div class="user-confirm-body">
+        <span class="user-confirm-icon">!</span>
+        <p>此操作将永久删除该角色, 是否继续?</p>
+      </div>
+      <div class="user-confirm-actions">
+        <button id="cancelDeleteRole" class="btn-outline" type="button">取消</button>
+        <button id="confirmDeleteRole" class="btn" type="button">确定</button>
+      </div>
+    </article>
+  </div>
+
+  <script src="../assets/i18n.js"></script>
+  <script>
+    const rolePermissionSchema = [
+      {
+        key: 'workspace',
+        label: '工作空间',
+        groups: [
+          { key: 'workspace', label: '工作空间', items: [{ key: 'workspace-view', label: '工作空间' }] }
+        ]
+      },
+      {
+        key: 'location-map',
+        label: '库位地图',
+        groups: [
+          {
+            key: 'location-map',
+            label: '库位地图',
+            items: [
+              { key: 'slot-lock', label: '库位锁定/解锁' },
+              { key: 'material-lock', label: '物料锁定/解锁' },
+              { key: 'stock-insert', label: '插入库存' },
+              { key: 'stock-clear', label: '清除库存' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'warehouse',
+        label: '仓库管理',
+        groups: [
+          {
+            key: 'warehouse',
+            label: '仓库管理',
+            items: [
+              { key: 'warehouse-add', label: '新增' },
+              { key: 'warehouse-edit', label: '修改' },
+              { key: 'warehouse-enable', label: '启用/停用' },
+              { key: 'warehouse-delete', label: '删除' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'stereo',
+        label: '立库管理',
+        groups: [
+          {
+            key: 'stereo',
+            label: '立库管理',
+            items: [
+              { key: 'stereo-view', label: '查看设备' },
+              { key: 'stereo-control', label: '设备控制' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'basic',
+        label: '基础管理',
+        groups: [
+          {
+            key: 'basic',
+            label: '基础管理',
+            items: [
+              { key: 'basic-view', label: '查看' },
+              { key: 'basic-edit', label: '修改' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'inbound',
+        label: '入库管理',
+        groups: [
+          {
+            key: 'inbound',
+            label: '入库管理',
+            items: [
+              { key: 'inbound-view', label: '查询' },
+              { key: 'inbound-create', label: '创建任务' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'outbound',
+        label: '出库管理',
+        groups: [
+          {
+            key: 'outbound',
+            label: '出库管理',
+            items: [
+              { key: 'outbound-view', label: '查询' },
+              { key: 'outbound-apply', label: '申请出库' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'inventory',
+        label: '库存管理',
+        groups: [
+          {
+            key: 'inventory',
+            label: '库存管理',
+            items: [
+              { key: 'inventory-view', label: '查看库存' },
+              { key: 'inventory-adjust', label: '库存调整' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'strategy',
+        label: '策略管理',
+        groups: [
+          {
+            key: 'strategy',
+            label: '策略管理',
+            items: [
+              { key: 'strategy-view', label: '查看策略' },
+              { key: 'strategy-edit', label: '编辑策略' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'task',
+        label: '任务管理',
+        groups: [
+          {
+            key: 'task',
+            label: '任务管理',
+            items: [
+              { key: 'task-view', label: '查询' },
+              { key: 'task-force', label: '强制完成' },
+              { key: 'task-cancel', label: '取消' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'interface',
+        label: '接口管理',
+        groups: [
+          {
+            key: 'interface',
+            label: '接口管理',
+            items: [
+              { key: 'interface-view', label: '查看流程日志' },
+              { key: 'interface-message', label: '查看报文' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'permission',
+        label: '权限管理',
+        groups: [
+          {
+            key: 'permission',
+            label: '权限管理',
+            items: [
+              { key: 'permission-role', label: '角色权限管理' },
+              { key: 'permission-user', label: '用户管理' }
+            ]
+          }
+        ]
+      },
+      {
+        key: 'home',
+        label: '主页',
+        groups: [
+          { key: 'home', label: '主页', items: [{ key: 'home-view', label: '主页' }] }
+        ]
+      },
+      {
+        key: 'side-map',
+        label: '库位侧地图',
+        groups: [
+          { key: 'side-map', label: '库位侧地图', items: [{ key: 'side-map-view', label: '查看侧地图' }] }
+        ]
+      },
+      {
+        key: 'pallet',
+        label: '托盘管理',
+        groups: [
+          { key: 'pallet', label: '托盘管理', items: [{ key: 'pallet-view', label: '查看托盘' }] }
+        ]
+      }
+    ];
+
+    let roleData = [
+      {
+        id: 'role-001',
+        name: 'Tourist',
+        remark: '',
+        builtin: true,
+        permissions: {}
+      },
+      {
+        id: 'role-002',
+        name: 'Administrator',
+        remark: '管理员',
+        permissions: {
+          workspace: ['workspace-view'],
+          'location-map': ['slot-lock', 'material-lock'],
+          warehouse: ['warehouse-add', 'warehouse-edit', 'warehouse-enable', 'warehouse-delete'],
+          inbound: ['inbound-view', 'inbound-create'],
+          outbound: ['outbound-view', 'outbound-apply'],
+          task: ['task-view', 'task-force', 'task-cancel'],
+          interface: ['interface-view', 'interface-message'],
+          permission: ['permission-role', 'permission-user']
+        }
+      },
+      {
+        id: 'role-003',
+        name: 'RusRole',
+        remark: '',
+        permissions: {
+          'location-map': ['slot-lock', 'material-lock'],
+          outbound: ['outbound-view'],
+          interface: ['interface-view']
+        }
+      }
+    ];
+
+    let currentPermissionRoleId = '';
+    let currentEditRoleId = '';
+    let currentDeleteRoleId = '';
+    let activeModuleKey = rolePermissionSchema[0].key;
+    let permissionDraft = {};
+
+    const roleTableBody = document.getElementById('roleTableBody');
+    const addRoleBtn = document.getElementById('addRoleBtn');
+
+    const rolePermissionOverlay = document.getElementById('rolePermissionOverlay');
+    const closeRolePermission = document.getElementById('closeRolePermission');
+    const cancelRolePermission = document.getElementById('cancelRolePermission');
+    const confirmRolePermission = document.getElementById('confirmRolePermission');
+    const allModulesCheckbox = document.getElementById('allModulesCheckbox');
+    const allPermissionsCheckbox = document.getElementById('allPermissionsCheckbox');
+    const rolePermissionModuleList = document.getElementById('rolePermissionModuleList');
+    const rolePermissionTree = document.getElementById('rolePermissionTree');
+
+    const editRoleOverlay = document.getElementById('editRoleOverlay');
+    const closeEditRole = document.getElementById('closeEditRole');
+    const cancelEditRole = document.getElementById('cancelEditRole');
+    const confirmEditRole = document.getElementById('confirmEditRole');
+    const editRoleName = document.getElementById('editRoleName');
+    const editRoleRemark = document.getElementById('editRoleRemark');
+    const editRoleError = document.getElementById('editRoleError');
+
+    const deleteRoleOverlay = document.getElementById('deleteRoleOverlay');
+    const closeDeleteRole = document.getElementById('closeDeleteRole');
+    const cancelDeleteRole = document.getElementById('cancelDeleteRole');
+    const confirmDeleteRole = document.getElementById('confirmDeleteRole');
+
+    function t(text) {
+      return window.WMSI18N ? window.WMSI18N.translateText(text) : text;
+    }
+
+    function currentLang() {
+      return window.WMSI18N && window.WMSI18N.getLanguage ? window.WMSI18N.getLanguage() : 'zh';
+    }
+
+    function formatModuleCountLabel(label, count) {
+      return currentLang() === 'en' ? `${t(label)} (${count})` : `${label}(${count})`;
+    }
+
+    function clonePermissions(permissions) {
+      return Object.fromEntries(
+        Object.entries(permissions || {}).map(([key, value]) => [key, [...value]])
+      );
+    }
+
+    function getModuleByKey(moduleKey) {
+      return rolePermissionSchema.find((module) => module.key === moduleKey);
+    }
+
+    function getModuleSelectedCount(moduleKey, permissions) {
+      return (permissions[moduleKey] || []).length;
+    }
+
+    function getTotalLeafCount(moduleKey) {
+      const module = getModuleByKey(moduleKey);
+      return module.groups.reduce((sum, group) => sum + group.items.length, 0);
+    }
+
+    function getFirstModuleKey() {
+      return rolePermissionSchema[0].key;
+    }
+
+    function renderRoleTable() {
+      roleTableBody.innerHTML = '';
+
+      roleData.forEach((role, index) => {
+        const row = document.createElement('tr');
+        const actions = role.builtin
+          ? `<button class="link-btn" type="button" data-action="permission" data-id="${role.id}">${t('权限设置')}</button>`
+          : `
+              <button class="link-btn" type="button" data-action="permission" data-id="${role.id}">${t('权限设置')}</button>
+              <button class="link-btn" type="button" data-action="edit" data-id="${role.id}">${t('修改')}</button>
+              <button class="link-btn danger" type="button" data-action="delete" data-id="${role.id}">${t('删除')}</button>
+            `;
+
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${role.name}</td>
+          <td>${role.remark ? t(role.remark) : ''}</td>
+          <td>${actions}</td>
+        `;
+        roleTableBody.appendChild(row);
+      });
+    }
+
+    function renderPermissionModules() {
+      rolePermissionModuleList.innerHTML = rolePermissionSchema.map((module) => {
+        const count = getModuleSelectedCount(module.key, permissionDraft);
+        const activeClass = module.key === activeModuleKey ? ' active' : '';
+        return `
+          <button class="permission-module-item${activeClass}" type="button" data-module-key="${module.key}">
+            ${formatModuleCountLabel(module.label, count)}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setCheckboxState(input, checked, indeterminate) {
+      input.checked = checked;
+      input.indeterminate = indeterminate;
+    }
+
+    function syncAllModuleCheckbox() {
+      const totalSelected = rolePermissionSchema.reduce((sum, module) => sum + getModuleSelectedCount(module.key, permissionDraft), 0);
+      const totalLeaf = rolePermissionSchema.reduce((sum, module) => sum + getTotalLeafCount(module.key), 0);
+      setCheckboxState(allModulesCheckbox, totalSelected > 0 && totalSelected === totalLeaf, totalSelected > 0 && totalSelected < totalLeaf);
+    }
+
+    function syncAllPermissionsCheckbox() {
+      const totalSelected = getModuleSelectedCount(activeModuleKey, permissionDraft);
+      const totalLeaf = getTotalLeafCount(activeModuleKey);
+      setCheckboxState(allPermissionsCheckbox, totalSelected > 0 && totalSelected === totalLeaf, totalSelected > 0 && totalSelected < totalLeaf);
+    }
+
+    function renderPermissionTree() {
+      const module = getModuleByKey(activeModuleKey);
+      const selectedItems = new Set(permissionDraft[activeModuleKey] || []);
+
+      rolePermissionTree.innerHTML = module.groups.map((group) => {
+        const groupSelectedCount = group.items.filter((item) => selectedItems.has(item.key)).length;
+        const groupChecked = groupSelectedCount > 0 && groupSelectedCount === group.items.length;
+        const groupIndeterminate = groupSelectedCount > 0 && groupSelectedCount < group.items.length;
+
+        return `
+          <section class="permission-group">
+            <label class="permission-check group" data-group-wrapper="${group.key}">
+              <span class="permission-arrow">${group.items.length ? '▾' : ''}</span>
+              <input
+                type="checkbox"
+                data-group-key="${group.key}"
+                ${groupChecked ? 'checked' : ''}
+                ${groupIndeterminate ? 'data-indeterminate="true"' : ''}
+              />
+              <span>${t(group.label)}</span>
+            </label>
+            <div class="permission-children">
+              ${group.items.map((item) => `
+                <label class="permission-check child">
+                  <input
+                    type="checkbox"
+                    data-group-key="${group.key}"
+                    data-item-key="${item.key}"
+                    ${selectedItems.has(item.key) ? 'checked' : ''}
+                  />
+                  <span>${t(item.label)}</span>
+                </label>
+              `).join('')}
+            </div>
+          </section>
+        `;
+      }).join('');
+
+      rolePermissionTree.querySelectorAll('[data-indeterminate="true"]').forEach((input) => {
+        input.indeterminate = true;
+      });
+
+      syncAllPermissionsCheckbox();
+      syncAllModuleCheckbox();
+    }
+
+    function ensureModuleSelection(moduleKey) {
+      if (!permissionDraft[moduleKey]) {
+        permissionDraft[moduleKey] = [];
+      }
+    }
+
+    function toggleModulePermissions(moduleKey, checked) {
+      const module = getModuleByKey(moduleKey);
+      ensureModuleSelection(moduleKey);
+      permissionDraft[moduleKey] = checked
+        ? module.groups.flatMap((group) => group.items.map((item) => item.key))
+        : [];
+    }
+
+    function toggleGroupPermissions(moduleKey, groupKey, checked) {
+      const module = getModuleByKey(moduleKey);
+      const group = module.groups.find((entry) => entry.key === groupKey);
+      const next = new Set(permissionDraft[moduleKey] || []);
+      group.items.forEach((item) => {
+        if (checked) next.add(item.key);
+        else next.delete(item.key);
+      });
+      permissionDraft[moduleKey] = [...next];
+    }
+
+    function togglePermissionItem(moduleKey, itemKey, checked) {
+      const next = new Set(permissionDraft[moduleKey] || []);
+      if (checked) next.add(itemKey);
+      else next.delete(itemKey);
+      permissionDraft[moduleKey] = [...next];
+    }
+
+    function openPermissionDialog(roleId) {
+      const role = roleData.find((item) => item.id === roleId);
+      if (!role) return;
+
+      currentPermissionRoleId = roleId;
+      permissionDraft = clonePermissions(role.permissions);
+      activeModuleKey = getFirstModuleKey();
+      renderPermissionModules();
+      renderPermissionTree();
+      rolePermissionOverlay.hidden = false;
+    }
+
+    function savePermissionDialog() {
+      roleData = roleData.map((role) => (
+        role.id === currentPermissionRoleId
+          ? { ...role, permissions: clonePermissions(permissionDraft) }
+          : role
+      ));
+      rolePermissionOverlay.hidden = true;
+      renderRoleTable();
+    }
+
+    function openEditDialog(roleId) {
+      const role = roleData.find((item) => item.id === roleId);
+      if (!role) return;
+
+      currentEditRoleId = roleId;
+      editRoleName.value = role.name;
+      editRoleRemark.value = role.remark ? t(role.remark) : '';
+      editRoleError.hidden = true;
+      editRoleError.textContent = '';
+      editRoleOverlay.hidden = false;
+    }
+
+    function openAddDialog() {
+      currentEditRoleId = '';
+      editRoleName.value = '';
+      editRoleRemark.value = '';
+      editRoleError.hidden = true;
+      editRoleError.textContent = '';
+      editRoleOverlay.hidden = false;
+    }
+
+    function submitEditRole() {
+      const nextName = editRoleName.value.trim();
+      const nextRemark = editRoleRemark.value.trim();
+
+      if (!nextName) {
+        editRoleError.textContent = t('角色名称不能为空。');
+        editRoleError.hidden = false;
+        return;
+      }
+
+      if (currentEditRoleId) {
+        roleData = roleData.map((role) => (
+          role.id === currentEditRoleId
+            ? { ...role, name: nextName, remark: nextRemark }
+            : role
+        ));
+      } else {
+        roleData.push({
+          id: `role-${Date.now()}`,
+          name: nextName,
+          remark: nextRemark,
+          permissions: {}
+        });
+      }
+
+      editRoleOverlay.hidden = true;
+      renderRoleTable();
+    }
+
+    function openDeleteDialog(roleId) {
+      currentDeleteRoleId = roleId;
+      deleteRoleOverlay.hidden = false;
+    }
+
+    function submitDeleteRole() {
+      roleData = roleData.filter((role) => role.id !== currentDeleteRoleId);
+      deleteRoleOverlay.hidden = true;
+      currentDeleteRoleId = '';
+      renderRoleTable();
+    }
+
+    function closeOverlay(overlay) {
+      overlay.hidden = true;
+    }
+
+    addRoleBtn.addEventListener('click', openAddDialog);
+
+    roleTableBody.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+
+      const action = button.dataset.action;
+      const roleId = button.dataset.id;
+
+      if (action === 'permission') openPermissionDialog(roleId);
+      if (action === 'edit') openEditDialog(roleId);
+      if (action === 'delete') openDeleteDialog(roleId);
+    });
+
+    rolePermissionModuleList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-module-key]');
+      if (!button) return;
+      activeModuleKey = button.dataset.moduleKey;
+      renderPermissionModules();
+      renderPermissionTree();
+    });
+
+    allModulesCheckbox.addEventListener('change', () => {
+      rolePermissionSchema.forEach((module) => {
+        toggleModulePermissions(module.key, allModulesCheckbox.checked);
+      });
+      renderPermissionModules();
+      renderPermissionTree();
+    });
+
+    allPermissionsCheckbox.addEventListener('change', () => {
+      toggleModulePermissions(activeModuleKey, allPermissionsCheckbox.checked);
+      renderPermissionModules();
+      renderPermissionTree();
+    });
+
+    rolePermissionTree.addEventListener('change', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+
+      const groupKey = input.dataset.groupKey;
+      const itemKey = input.dataset.itemKey;
+
+      if (groupKey && !itemKey) {
+        toggleGroupPermissions(activeModuleKey, groupKey, input.checked);
+      }
+
+      if (groupKey && itemKey) {
+        togglePermissionItem(activeModuleKey, itemKey, input.checked);
+      }
+
+      renderPermissionModules();
+      renderPermissionTree();
+    });
+
+    closeRolePermission.addEventListener('click', () => closeOverlay(rolePermissionOverlay));
+    cancelRolePermission.addEventListener('click', () => closeOverlay(rolePermissionOverlay));
+    confirmRolePermission.addEventListener('click', savePermissionDialog);
+
+    closeEditRole.addEventListener('click', () => closeOverlay(editRoleOverlay));
+    cancelEditRole.addEventListener('click', () => closeOverlay(editRoleOverlay));
+    confirmEditRole.addEventListener('click', submitEditRole);
+
+    closeDeleteRole.addEventListener('click', () => closeOverlay(deleteRoleOverlay));
+    cancelDeleteRole.addEventListener('click', () => closeOverlay(deleteRoleOverlay));
+    confirmDeleteRole.addEventListener('click', submitDeleteRole);
+
+    [rolePermissionOverlay, editRoleOverlay, deleteRoleOverlay].forEach((overlay) => {
+      overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) {
+          closeOverlay(overlay);
+        }
+      });
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      [rolePermissionOverlay, editRoleOverlay, deleteRoleOverlay].forEach((overlay) => {
+        if (!overlay.hidden) {
+          closeOverlay(overlay);
+        }
+      });
+    });
+
+    window.addEventListener('wms-language-change', () => {
+      renderRoleTable();
+
+      if (!rolePermissionOverlay.hidden) {
+        renderPermissionModules();
+        renderPermissionTree();
+      }
+    });
+
+    renderRoleTable();
+  </script>
+</body>
+</html>

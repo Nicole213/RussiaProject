@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>托盘列表</title>
+  <link rel="stylesheet" href="../assets/page.css" />
+</head>
+<body>
+  <div class="page">
+    <section class="page-header">
+      <div>
+        <h1>托盘列表</h1>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="filters single-row pallet-filters">
+        <div class="field date-range-field">
+          <label>日期区间</label>
+          <div class="date-range-input">
+            <input id="startDate" type="date" value="2026-04-01" />
+            <span class="date-range-sep">至</span>
+            <input id="endDate" type="date" value="2026-04-10" />
+          </div>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <select id="statusFilter">
+            <option value="">全部</option>
+            <option value="忙碌">忙碌</option>
+            <option value="空闲">空闲</option>
+            <option value="已锁定">已锁定</option>
+            <option value="待出库">待出库</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>托盘编码</label>
+          <input id="codeFilter" type="text" value="" placeholder="请输入托盘编码" />
+        </div>
+        <div class="inline-actions pallet-filter-actions">
+          <button id="searchBtn" class="btn" type="button">查询</button>
+          <button id="resetBtn" class="btn-outline" type="button">重置</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="table-shell" style="margin-top: 16px;">
+      <div class="table-headbar">
+        <div class="inline-actions">
+          <button class="btn" type="button">新建入库请求</button>
+          <button class="btn" type="button">申请出库</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>托盘号</th>
+              <th>托盘规格</th>
+              <th>高度</th>
+              <th>重量</th>
+              <th>位置</th>
+              <th>入库时间</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="palletTableBody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="resultCount">共 0 条</span>
+        <span class="page-size">10条/页</span>
+        <div class="pagination">
+          <span class="page-num active">1</span>
+          <span class="page-num">2</span>
+          <span class="page-num">3</span>
+          <span class="page-num">4</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="palletModalOverlay" class="list-modal-overlay" hidden>
+    <article class="list-modal" role="dialog" aria-modal="true" aria-labelledby="listModalTitle">
+      <div class="list-modal-head">
+        <h3 id="listModalTitle">托盘详情</h3>
+        <button id="closeListModal" class="list-modal-close" type="button" aria-label="关闭弹窗">x</button>
+      </div>
+      <div id="listModalBody" class="list-modal-body"></div>
+      <div class="list-modal-actions">
+        <button id="savePalletBtn" class="btn" type="button" hidden>保存</button>
+        <button id="cancelPalletBtn" class="btn-outline" type="button">关闭</button>
+      </div>
+    </article>
+  </div>
+
+  <script src="../assets/i18n.js"></script>
+  <script>
+    const palletData = [
+      { code: 'PLT-240401', spec: '1200 x 1000', height: '1280 mm', weight: '860 kg', position: '1-3-12', inboundTime: '2026-04-01 08:12:35', status: '忙碌' },
+      { code: 'PLT-240402', spec: '1200 x 1100', height: '980 mm', weight: '520 kg', position: '2-2-9', inboundTime: '2026-04-02 10:25:40', status: '空闲' },
+      { code: 'PLT-240418', spec: '1400 x 1100', height: '1500 mm', weight: '1100 kg', position: '3-4-1', inboundTime: '2026-04-03 13:42:18', status: '已锁定' },
+      { code: 'PLT-240433', spec: '1300 x 1200', height: '860 mm', weight: '420 kg', position: '1-5-4', inboundTime: '2026-04-04 09:18:52', status: '待出库' },
+      { code: 'PLT-240447', spec: '1200 x 1000', height: '1420 mm', weight: '930 kg', position: '1-8-1', inboundTime: '2026-04-05 16:08:11', status: '忙碌' },
+      { code: 'PLT-240453', spec: '1200 x 1100', height: '1360 mm', weight: '880 kg', position: '1-8-8', inboundTime: '2026-04-06 11:36:09', status: '空闲' },
+      { code: 'PLT-240514', spec: '1400 x 1100', height: '1600 mm', weight: '1180 kg', position: '2-2-5', inboundTime: '2026-04-07 14:20:26', status: '忙碌' },
+      { code: 'PLT-240559', spec: '1300 x 1200', height: '1120 mm', weight: '610 kg', position: '2-6-11', inboundTime: '2026-04-08 19:05:47', status: '已锁定' },
+      { code: 'PLT-240577', spec: '1200 x 1000', height: '1480 mm', weight: '970 kg', position: '2-8-9', inboundTime: '2026-04-09 07:54:03', status: '待出库' },
+      { code: 'PLT-240588', spec: '1400 x 1100', height: '1700 mm', weight: '1260 kg', position: '2-9-7', inboundTime: '2026-04-10 17:40:31', status: '忙碌' }
+    ];
+
+    const tableBody = document.getElementById('palletTableBody');
+    const resultCount = document.getElementById('resultCount');
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const statusFilter = document.getElementById('statusFilter');
+    const codeFilter = document.getElementById('codeFilter');
+    const searchBtn = document.getElementById('searchBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const palletModalOverlay = document.getElementById('palletModalOverlay');
+    const listModalTitle = document.getElementById('listModalTitle');
+    const listModalBody = document.getElementById('listModalBody');
+    const closeListModal = document.getElementById('closeListModal');
+    const cancelPalletBtn = document.getElementById('cancelPalletBtn');
+    const savePalletBtn = document.getElementById('savePalletBtn');
+    let activeModalCode = '';
+    let modalMode = 'view';
+
+    function t(text) {
+      return window.WMSI18N ? window.WMSI18N.translateText(text) : text;
+    }
+
+    function getStatusChipClass(status) {
+      if (status === '忙碌') return 'success';
+      if (status === '空闲') return 'info';
+      if (status === '已锁定') return 'danger';
+      if (status === '待出库') return 'warning';
+      return '';
+    }
+
+    function renderTable(data) {
+      tableBody.innerHTML = '';
+
+      if (!data.length) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `<td colspan="8" class="table-empty">${t('未查询到符合条件的托盘数据')}</td>`;
+        tableBody.appendChild(emptyRow);
+        resultCount.textContent = t('共 0 条');
+        return;
+      }
+
+      data.forEach((item) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.code}</td>
+          <td>${item.spec}</td>
+          <td>${item.height}</td>
+          <td>${item.weight}</td>
+          <td>${item.position}</td>
+          <td>${item.inboundTime}</td>
+          <td><span class="chip ${getStatusChipClass(item.status)}">${t(item.status)}</span></td>
+          <td>
+            <button class="link-btn" type="button" data-action="view" data-code="${item.code}">${t('查看')}</button>
+            <button class="link-btn" type="button" data-action="edit" data-code="${item.code}">${t('编辑')}</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      resultCount.textContent = t(`共 ${data.length} 条`);
+    }
+
+    function filterData() {
+      const start = startDate.value ? new Date(`${startDate.value}T00:00:00`) : null;
+      const end = endDate.value ? new Date(`${endDate.value}T23:59:59`) : null;
+      const status = statusFilter.value.trim();
+      const code = codeFilter.value.trim().toUpperCase();
+
+      const filtered = palletData.filter((item) => {
+        const inboundDate = new Date(item.inboundTime.replace(' ', 'T'));
+        const matchStart = !start || inboundDate >= start;
+        const matchEnd = !end || inboundDate <= end;
+        const matchStatus = !status || item.status === status;
+        const matchCode = !code || item.code.toUpperCase().includes(code);
+        return matchStart && matchEnd && matchStatus && matchCode;
+      });
+
+      renderTable(filtered);
+    }
+
+    function getPalletByCode(code) {
+      return palletData.find((item) => item.code === code);
+    }
+
+    function closeModal() {
+      palletModalOverlay.hidden = true;
+      activeModalCode = '';
+      modalMode = 'view';
+      savePalletBtn.hidden = true;
+    }
+
+    function renderViewModal(item) {
+      listModalTitle.textContent = t('查看托盘详情');
+      listModalBody.innerHTML = `
+        <div class="list-modal-grid">
+          <div class="list-modal-item"><span>${t('托盘号')}</span><strong>${item.code}</strong></div>
+          <div class="list-modal-item"><span>${t('托盘规格')}</span><strong>${item.spec}</strong></div>
+          <div class="list-modal-item"><span>${t('高度')}</span><strong>${item.height}</strong></div>
+          <div class="list-modal-item"><span>${t('重量')}</span><strong>${item.weight}</strong></div>
+          <div class="list-modal-item"><span>${t('位置')}</span><strong>${item.position}</strong></div>
+          <div class="list-modal-item"><span>${t('入库时间')}</span><strong>${item.inboundTime}</strong></div>
+          <div class="list-modal-item span-2">
+            <span>${t('托盘状态')}</span>
+            <div class="modal-status-wrap"><span class="chip modal-status-chip ${getStatusChipClass(item.status)}">${t(item.status)}</span></div>
+          </div>
+        </div>
+      `;
+      savePalletBtn.hidden = true;
+    }
+
+    function renderEditModal(item) {
+      listModalTitle.textContent = t('编辑托盘信息');
+      listModalBody.innerHTML = `
+        <div class="list-modal-grid">
+          <div class="list-modal-item">
+            <label for="editCodeInput">${t('托盘号')}</label>
+            <input id="editCodeInput" type="text" value="${item.code}" />
+          </div>
+          <div class="list-modal-item">
+            <label for="editSpecInput">${t('托盘规格')}</label>
+            <input id="editSpecInput" type="text" value="${item.spec}" />
+          </div>
+          <div class="list-modal-item">
+            <label for="editPositionInput">${t('位置')}</label>
+            <input id="editPositionInput" type="text" value="${item.position}" />
+          </div>
+          <div class="list-modal-item">
+            <span>${t('高度')}</span>
+            <strong>${item.height}</strong>
+          </div>
+          <div class="list-modal-item">
+            <span>${t('重量')}</span>
+            <strong>${item.weight}</strong>
+          </div>
+          <div class="list-modal-item">
+            <span>${t('入库时间')}</span>
+            <strong>${item.inboundTime}</strong>
+          </div>
+          <div class="list-modal-item span-2">
+            <span>${t('托盘状态')}</span>
+            <div class="modal-status-wrap"><span class="chip modal-status-chip ${getStatusChipClass(item.status)}">${t(item.status)}</span></div>
+          </div>
+        </div>
+      `;
+      savePalletBtn.hidden = false;
+    }
+
+    function openModal(code, mode) {
+      const item = getPalletByCode(code);
+      if (!item) return;
+
+      activeModalCode = code;
+      modalMode = mode;
+
+      if (mode === 'edit') {
+        renderEditModal(item);
+      } else {
+        renderViewModal(item);
+      }
+
+      palletModalOverlay.hidden = false;
+    }
+
+    searchBtn.addEventListener('click', filterData);
+    resetBtn.addEventListener('click', () => {
+      startDate.value = '2026-04-01';
+      endDate.value = '2026-04-10';
+      statusFilter.value = '';
+      codeFilter.value = '';
+      renderTable(palletData);
+    });
+
+    tableBody.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-action]');
+      if (!btn) return;
+
+      const { action, code } = btn.dataset;
+      openModal(code, action);
+    });
+
+    savePalletBtn.addEventListener('click', () => {
+      const item = getPalletByCode(activeModalCode);
+      if (!item || modalMode !== 'edit') return;
+
+      const nextCode = document.getElementById('editCodeInput').value.trim();
+      const nextSpec = document.getElementById('editSpecInput').value.trim();
+      const nextPosition = document.getElementById('editPositionInput').value.trim();
+
+      item.code = nextCode || item.code;
+      item.spec = nextSpec || item.spec;
+      item.position = nextPosition || item.position;
+
+      filterData();
+      closeModal();
+    });
+
+    closeListModal.addEventListener('click', closeModal);
+    cancelPalletBtn.addEventListener('click', closeModal);
+    palletModalOverlay.addEventListener('click', (event) => {
+      if (event.target === palletModalOverlay) {
+        closeModal();
+      }
+    });
+
+    renderTable(palletData);
+  </script>
+</body>
+</html>

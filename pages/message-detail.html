@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>接口消息详情</title>
+  <link rel="stylesheet" href="../assets/page.css" />
+</head>
+<body>
+  <div class="page">
+    <section class="page-header">
+      <div>
+        <h1>接口消息详情</h1>
+        <p class="subtitle">查看请求 URL、状态码、请求内容与响应内容，并支持异常接口手动重发。</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn" type="button">重新发送</button>
+        <button class="btn-outline" type="button" onclick="window.top.postMessage({ type: 'navigate', page: 'process-log' }, '*')">取消 / 返回</button>
+      </div>
+    </section>
+
+    <section class="grid-4">
+      <article class="mini-stat">请求 URL<strong>/api/wcs/outfeed-command</strong></article>
+      <article class="mini-stat">请求状态<strong>500</strong></article>
+      <article class="mini-stat">发送方<strong>ZYC WMS</strong></article>
+      <article class="mini-stat">接收方<strong>WCS</strong></article>
+    </section>
+
+    <section class="code-grid" style="margin-top: 18px;">
+      <article class="code-panel">
+        <h3>Request Content</h3>
+        <pre>{
+  "requestId": "REQ-20260410-0142",
+  "commandType": "OutBound",
+  "palletCode": "PLT-240433",
+  "line": 1,
+  "section": 5,
+  "place": 4,
+  "allowMove": true,
+  "sender": "ZYC WMS"
+}</pre>
+      </article>
+
+      <article class="code-panel">
+        <h3>Response Content</h3>
+        <pre>{
+  "resultCode": 500,
+  "errorCode": 203,
+  "message": "Task cancelled due to equipment malfunction",
+  "recipient": "WCS",
+  "status": "Not completed",
+  "repetition": 2
+}</pre>
+      </article>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <div class="panel-title">
+        <h3>处理记录</h3>
+        <span class="chip danger">未完成</span>
+      </div>
+      <div class="stack-list">
+        <div class="stack-item">14:33:46 请求发起，目标托盘 `PLT-240433` 申请出库。</div>
+        <div class="stack-item">14:33:47 WCS 返回错误码 203，设备故障导致任务取消。</div>
+        <div class="stack-item">14:34:12 系统自动重试 1 次失败，14:35:10 自动重试 2 次失败。</div>
+        <div class="stack-item">建议人工确认堆垛机状态后执行手动重发。</div>
+      </div>
+    </section>
+  </div>
+  <script src="../assets/i18n.js"></script>
+</body>
+</html>
