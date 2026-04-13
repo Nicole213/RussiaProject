@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="../assets/page.css" />
 </head>
 <body>
-  <div class="page">
+  <div class="page dashboard-page">
     <section class="page-header">
       <div>
         <h1>首页仪表盘</h1>
@@ -23,7 +23,7 @@
           </label>
           <span class="chip info" id="workModeStatus">当前 远程模式</span>
         </div>
-        <button class="btn" type="button">启动优化流程</button>
+        <button class="btn" type="button">调整库存优化</button>
       </div>
     </section>
 
@@ -59,6 +59,143 @@
     </section>
 
     <section class="dashboard-grid">
+      <article class="chart-panel span-full">
+        <div class="panel-title">
+          <h3>占用空间概览</h3>
+        </div>
+        <div class="occupancy-overview">
+          <article class="occupancy-card">
+            <div class="occupancy-table">
+              <div class="occupancy-row occupancy-head">
+                <span>位置</span>
+                <span>占用高度</span>
+                <span>占用率</span>
+                <span>状态</span>
+              </div>
+              <div class="occupancy-row">
+                <span>1排1列</span>
+                <span>8945</span>
+                <span>69.6%</span>
+                <span class="chip warning">正常</span>
+              </div>
+              <div class="occupancy-row">
+                <span>1排2列</span>
+                <span>7890</span>
+                <span>63.0%</span>
+                <span class="chip warning">正常</span>
+              </div>
+              <div class="occupancy-row">
+                <span>1排3列</span>
+                <span>13456</span>
+                <span>80.4%</span>
+                <span class="chip danger">接近饱和</span>
+              </div>
+              <div class="occupancy-row">
+                <span>1排4列</span>
+                <span>4120</span>
+                <span>39.1%</span>
+                <span class="chip success">空闲</span>
+              </div>
+              <div class="occupancy-row">
+                <span>1排5列</span>
+                <span>11230</span>
+                <span>76.1%</span>
+                <span class="chip warning">正常</span>
+              </div>
+              <div class="occupancy-row">
+                <span>1排6列</span>
+                <span>14890</span>
+                <span>89.1%</span>
+                <span class="chip danger">接近饱和</span>
+              </div>
+              <div class="occupancy-row">
+                <span>1排7列</span>
+                <span>3560</span>
+                <span>30.4%</span>
+                <span class="chip success">空闲</span>
+              </div>
+              <div class="occupancy-row">
+                <span>1排8列</span>
+                <span>10680</span>
+                <span>73.9%</span>
+                <span class="chip warning">正常</span>
+              </div>
+              <div class="occupancy-row">
+                <span>1排9列</span>
+                <span>13950</span>
+                <span>84.8%</span>
+                <span class="chip danger">接近饱和</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="occupancy-card">
+            <div class="occupancy-table">
+              <div class="occupancy-row occupancy-head">
+                <span>位置</span>
+                <span>占用高度</span>
+                <span>占用率</span>
+                <span>状态</span>
+              </div>
+              <div class="occupancy-row">
+                <span>2排1列</span>
+                <span>4980</span>
+                <span>45.7%</span>
+                <span class="chip success">空闲</span>
+              </div>
+              <div class="occupancy-row">
+                <span>2排2列</span>
+                <span>6820</span>
+                <span>58.7%</span>
+                <span class="chip warning">正常</span>
+              </div>
+              <div class="occupancy-row">
+                <span>2排3列</span>
+                <span>7345</span>
+                <span>65.2%</span>
+                <span class="chip warning">正常</span>
+              </div>
+              <div class="occupancy-row">
+                <span>2排4列</span>
+                <span>3890</span>
+                <span>34.8%</span>
+                <span class="chip success">空闲</span>
+              </div>
+              <div class="occupancy-row">
+                <span>2排5列</span>
+                <span>10340</span>
+                <span>71.7%</span>
+                <span class="chip warning">正常</span>
+              </div>
+              <div class="occupancy-row">
+                <span>2排6列</span>
+                <span>13620</span>
+                <span>82.6%</span>
+                <span class="chip danger">接近饱和</span>
+              </div>
+              <div class="occupancy-row">
+                <span>2排7列</span>
+                <span>5710</span>
+                <span>52.2%</span>
+                <span class="chip warning">正常</span>
+              </div>
+              <div class="occupancy-row">
+                <span>2排8列</span>
+                <span>2450</span>
+                <span>26.1%</span>
+                <span class="chip success">空闲</span>
+              </div>
+              <div class="occupancy-row">
+                <span>2排9列</span>
+                <span>11870</span>
+                <span>78.3%</span>
+                <span class="chip warning">正常</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </article>
+
       <article class="chart-panel span-full">
         <div class="panel-title">
           <h3>一周托盘流动图表</h3>
@@ -102,28 +239,36 @@
                   <filter id="lineGlowBlue" x="-20%" y="-20%" width="140%" height="140%">
                     <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#5bb8f1" flood-opacity="0.16" />
                   </filter>
+                  <filter id="pointGlowInbound" x="-200%" y="-200%" width="400%" height="400%">
+                    <feDropShadow dx="0" dy="0" stdDeviation="2.6" flood-color="#7f9cf5" flood-opacity="0.36" />
+                    <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#7f9cf5" flood-opacity="0.12" />
+                  </filter>
+                  <filter id="pointGlowOutbound" x="-200%" y="-200%" width="400%" height="400%">
+                    <feDropShadow dx="0" dy="0" stdDeviation="2.6" flood-color="#5bb8f1" flood-opacity="0.34" />
+                    <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#5bb8f1" flood-opacity="0.12" />
+                  </filter>
                 </defs>
                 <path class="line-area line-area-inbound" d="M40 84 L146 53 L253 34 L360 14 L466 43 L573 61 L660 56 L660 220 L40 220 Z"></path>
                 <path class="line-area line-area-outbound" d="M40 103 L146 76 L253 67 L360 39 L466 58 L573 82 L660 79 L660 220 L40 220 Z"></path>
                 <path class="line-path line-path-inbound" d="M40 84 L146 53 L253 34 L360 14 L466 43 L573 61 L660 56"></path>
                 <path class="line-path line-path-outbound" d="M40 103 L146 76 L253 67 L360 39 L466 58 L573 82 L660 79"></path>
                 <g class="line-points line-points-inbound">
-                  <circle cx="40" cy="84" r="5"></circle>
-                  <circle cx="146" cy="53" r="5"></circle>
-                  <circle cx="253" cy="34" r="5"></circle>
-                  <circle cx="360" cy="14" r="5"></circle>
-                  <circle cx="466" cy="43" r="5"></circle>
-                  <circle cx="573" cy="61" r="5"></circle>
-                  <circle cx="660" cy="56" r="5"></circle>
+                  <circle cx="40" cy="84" r="4"></circle>
+                  <circle cx="146" cy="53" r="4"></circle>
+                  <circle cx="253" cy="34" r="4"></circle>
+                  <circle cx="360" cy="14" r="4"></circle>
+                  <circle cx="466" cy="43" r="4"></circle>
+                  <circle cx="573" cy="61" r="4"></circle>
+                  <circle cx="660" cy="56" r="4"></circle>
                 </g>
                 <g class="line-points line-points-outbound">
-                  <circle cx="40" cy="103" r="5"></circle>
-                  <circle cx="146" cy="76" r="5"></circle>
-                  <circle cx="253" cy="67" r="5"></circle>
-                  <circle cx="360" cy="39" r="5"></circle>
-                  <circle cx="466" cy="58" r="5"></circle>
-                  <circle cx="573" cy="82" r="5"></circle>
-                  <circle cx="660" cy="79" r="5"></circle>
+                  <circle cx="40" cy="103" r="4"></circle>
+                  <circle cx="146" cy="76" r="4"></circle>
+                  <circle cx="253" cy="67" r="4"></circle>
+                  <circle cx="360" cy="39" r="4"></circle>
+                  <circle cx="466" cy="58" r="4"></circle>
+                  <circle cx="573" cy="82" r="4"></circle>
+                  <circle cx="660" cy="79" r="4"></circle>
                 </g>
               </svg>
               <div class="line-end-label inbound" style="left: calc(100% - 96px); top: 26px;">
@@ -147,57 +292,6 @@
           </div>
         </div>
       </article>
-    </section>
-
-    <section class="chart-panel" style="margin-top: 16px;">
-      <div class="panel-title">
-        <h3>仓库负载数据</h3>
-        <span class="chip warning">2个库区</span>
-      </div>
-      <div class="load-layout">
-        <article class="load-summary">
-          <p class="metric-label">仓库整体使用率</p>
-          <strong class="load-summary-value">78.4%</strong>
-          <div class="load-progress">
-            <span class="load-progress-fill overall" style="width: 78.4%;"></span>
-          </div>
-          <p class="load-summary-foot">当前整体容量使用平稳，建议优先关注接近 80% 的库区。</p>
-        </article>
-        <div class="zone-grid">
-          <article class="zone-card">
-            <div class="zone-card-head">
-              <div>
-                <p class="zone-name">库区 A</p>
-                <strong>库排 1</strong>
-              </div>
-              <span class="chip danger">偏高</span>
-            </div>
-            <div class="zone-value-row">
-              <span class="zone-rate">81.2%</span>
-              <span class="zone-meta">已用 406 / 500 托盘位</span>
-            </div>
-            <div class="load-progress compact">
-              <span class="load-progress-fill zone-a" style="width: 81.2%;"></span>
-            </div>
-          </article>
-          <article class="zone-card">
-            <div class="zone-card-head">
-              <div>
-                <p class="zone-name">库区 B</p>
-                <strong>库排 2</strong>
-              </div>
-              <span class="chip success">稳定</span>
-            </div>
-            <div class="zone-value-row">
-              <span class="zone-rate">75.6%</span>
-              <span class="zone-meta">已用 378 / 500 托盘位</span>
-            </div>
-            <div class="load-progress compact">
-              <span class="load-progress-fill zone-b" style="width: 75.6%;"></span>
-            </div>
-          </article>
-        </div>
-      </div>
     </section>
   </div>
 

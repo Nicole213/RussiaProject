@@ -43,8 +43,6 @@
       </div>
 
       <div class="pallet-card-body">
-        <div class="pallet-card-note" id="palletCargoName"></div>
-
         <div class="pallet-info-grid">
           <div class="pallet-info-item">
             <div class="pallet-info-head">
@@ -53,14 +51,6 @@
             </div>
             <strong id="palletCodeText"></strong>
             <input id="palletCodeInput" class="pallet-inline-input" type="text" hidden />
-          </div>
-          <div class="pallet-info-item">
-            <div class="pallet-info-head">
-              <span class="pallet-info-label">托盘规格</span>
-              <button id="editSpecBtn" class="link-btn pallet-inline-btn" type="button">编辑</button>
-            </div>
-            <strong id="palletSpecText"></strong>
-            <input id="palletSpecInput" class="pallet-inline-input" type="text" hidden />
           </div>
           <div class="pallet-info-item">
             <span class="pallet-info-label">高度</span>
@@ -99,7 +89,6 @@
   <script src="../assets/i18n.js"></script>
   <script>
     const TOTAL_LEVELS = 46;
-    const defaultSpecs = ['1200 x 1000', '1200 x 1100', '1400 x 1100', '1300 x 1200'];
     let rackRows = [
       {
         name: '1排',
@@ -136,16 +125,12 @@
     const board = document.getElementById('rackLayoutBoard');
     const palletCardOverlay = document.getElementById('palletCardOverlay');
     const closePalletCard = document.getElementById('closePalletCard');
-    const palletCargoName = document.getElementById('palletCargoName');
     const palletCodeText = document.getElementById('palletCodeText');
-    const palletSpecText = document.getElementById('palletSpecText');
     const palletCodeInput = document.getElementById('palletCodeInput');
-    const palletSpecInput = document.getElementById('palletSpecInput');
     const palletHeightText = document.getElementById('palletHeightText');
     const palletAddressText = document.getElementById('palletAddressText');
     const palletStatusChip = document.getElementById('palletStatusChip');
     const editCodeBtn = document.getElementById('editCodeBtn');
-    const editSpecBtn = document.getElementById('editSpecBtn');
     const clearPalletBtn = document.getElementById('clearPalletBtn');
     const toggleLockBtn = document.getElementById('toggleLockBtn');
     const removePalletBtn = document.getElementById('removePalletBtn');
@@ -156,7 +141,6 @@
     const confirmActionBtn = document.getElementById('confirmActionBtn');
     let selectedPlacementRef = null;
     let codeEditing = false;
-    let specEditing = false;
     let pendingConfirmAction = null;
 
     rackRows = rackRows.map((row, rowIndex) => ({
@@ -165,7 +149,6 @@
         ...column,
         placements: column.placements.map((item, placementIndex) => ({
           ...item,
-          spec: item.spec || defaultSpecs[(rowIndex + columnIndex + placementIndex) % defaultSpecs.length],
           heightMm: item.heightMm || 180 + item.height * 280,
           status: item.status || ((rowIndex + columnIndex + placementIndex) % 6 === 0 ? '锁定' : '正常')
         }))
@@ -203,7 +186,6 @@
       palletCardOverlay.hidden = true;
       selectedPlacementRef = null;
       codeEditing = false;
-      specEditing = false;
     }
 
     function openConfirmDialog(title, message, actionLabel, onConfirm) {
@@ -227,9 +209,7 @@
       }
 
       const isEmpty = Boolean(item.isEmpty);
-      palletCargoName.textContent = isEmpty ? '当前无托盘信息' : `货物：${item.cargo}`;
       palletCodeText.textContent = isEmpty ? '' : item.pallet;
-      palletSpecText.textContent = isEmpty ? '' : item.spec;
       palletHeightText.textContent = getHeightText(item);
       palletAddressText.textContent = isEmpty ? '' : getAddress(selectedPlacementRef, item);
       palletStatusChip.textContent = isEmpty ? '' : item.status;
@@ -239,17 +219,14 @@
       clearPalletBtn.textContent = isEmpty ? '已清空' : '清空托盘';
       clearPalletBtn.disabled = isEmpty;
       editCodeBtn.disabled = isEmpty;
-      editSpecBtn.disabled = isEmpty;
       toggleLockBtn.disabled = isEmpty;
       removePalletBtn.disabled = isEmpty;
       syncInlineEditor(codeEditing && !isEmpty, palletCodeText, palletCodeInput, editCodeBtn, item.pallet);
-      syncInlineEditor(specEditing && !isEmpty, palletSpecText, palletSpecInput, editSpecBtn, item.spec);
     }
 
     function openInfoCard(ref) {
       selectedPlacementRef = ref;
       codeEditing = false;
-      specEditing = false;
       syncInfoCard();
       palletCardOverlay.hidden = false;
     }
@@ -302,9 +279,6 @@
       column.placements.forEach((item, index) => {
         const load = document.createElement('div');
         load.className = 'rack-load';
-        if (index % 2 === 1) {
-          load.classList.add('alt');
-        }
         if (item.status === '锁定') {
           load.classList.add('is-locked');
         }
@@ -314,7 +288,6 @@
         load.dataset.columnIndex = columnIndex;
         load.dataset.placementIndex = index;
         load.innerHTML = `
-          <span class="rack-load-cargo">${item.cargo}</span>
           <span class="rack-load-pallet">${item.pallet}</span>
         `;
         load.title = `${item.pallet}：第 ${item.start} 层放托盘，占用 ${item.height} 层，顶部预留 ${item.clearance} 层`;
@@ -380,25 +353,6 @@
 
       item.pallet = palletCodeInput.value.trim() || item.pallet;
       codeEditing = false;
-      renderBoard();
-      syncInfoCard();
-    });
-
-    editSpecBtn.addEventListener('click', () => {
-      const item = getPlacement(selectedPlacementRef);
-      if (!item) return;
-
-      if (!specEditing) {
-        if (item.isEmpty) return;
-        specEditing = true;
-        syncInfoCard();
-        palletSpecInput.focus();
-        palletSpecInput.select();
-        return;
-      }
-
-      item.spec = palletSpecInput.value.trim() || item.spec;
-      specEditing = false;
       renderBoard();
       syncInfoCard();
     });
