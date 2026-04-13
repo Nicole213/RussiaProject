@@ -60,7 +60,7 @@
     ["权限管理 / 用户管理", "Permission Management / User Management"],
     ["查看接口消息详情", "View Interface Message Details"],
     ["2个库区", "2 Zones"],
-    ["2排 / 9列 / 46层", "2 rows / 9 columns / 46 levels"],
+    ["2排 / 9列 / 46层", "2 rows / 9 sections / 46 levels"],
     ["托盘与货物占用层", "Occupied Levels"],
     ["预留空隙层", "Reserved Clearance Levels"],
     ["空层位", "Empty Levels"],
@@ -95,7 +95,7 @@
     ["确认解锁", "Confirm Unlock"],
     ["确认移除托盘", "Confirm Remove Pallet"],
     ["确认移除", "Confirm Remove"],
-    ["9列 × 46层", "9 columns x 46 levels"],
+    ["9列 × 46层", "9 sections x 46 levels"],
     ["请求 URL", "Request URL"],
     ["请求状态", "Request Status"],
     ["发送方", "Sender"],
@@ -330,14 +330,14 @@
     },
     {
       zh: /^(\d+)列$/,
-      en: "Col $1",
-      enRegex: /^Col (\d+)$/,
+      en: "Section $1",
+      enRegex: /^Section (\d+)$/,
       zhTemplate: "$1列"
     },
     {
       zh: /^(\d+)排(\d+)列$/,
-      en: "Row $1 Col $2",
-      enRegex: /^Row (\d+) Col (\d+)$/,
+      en: "Row $1 Section $2",
+      enRegex: /^Row (\d+) Section (\d+)$/,
       zhTemplate: "$1排$2列"
     },
     {
