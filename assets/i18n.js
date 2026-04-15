@@ -3,7 +3,7 @@
   const ATTRIBUTE_NAMES = ["placeholder", "title", "aria-label"];
 
   const exactPairs = [
-    ["ZYC WMS 高保真原型", "ZYC WMS High-Fidelity Prototype"],
+    ["ZYC WMS", "ZYC WMS"],
     ["ZYC WMS 原型内容区域", "ZYC WMS Prototype Content Area"],
     ["仓储管理系统", "WMS"],
     ["当前仓库：", "Current Warehouse:"],
